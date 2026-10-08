@@ -31,6 +31,9 @@ $pythonParts = $Python -split " "
 Invoke-Checked $pythonParts[0] (@($pythonParts | Select-Object -Skip 1) + @("-m", "venv", "--clear", $venv))
 Invoke-Checked $py @("-m", "pip", "install", "--quiet", "--disable-pip-version-check",
     "-r", "requirements.txt", "-r", "requirements-build.txt")
+# sounddevice ships ASIO-enabled PortAudio builds (Steinberg ASIO API) that are used only when SD_ENABLE_ASIO is set.
+# Hark never sets it, so drop them and do not distribute them in the exe.
+Get-ChildItem (Join-Path $venv "Lib\site-packages\_sounddevice_data\portaudio-binaries") -Filter "*-asio.dll" | Remove-Item
 
 Write-Host "2/6 speech model"
 $model = Join-Path $root $modelName

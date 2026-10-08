@@ -4,7 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-08
+
 ### Changed
+- The exe no longer bundles the ASIO-enabled PortAudio libraries that came with sounddevice; Hark never used them.
 - Renamed the project and the app to Codex Hark (`CodexHark.exe`). Settings in `%APPDATA%\CodexSlushatel` and the old start-up entry are moved automatically on first start.
 - English README, MIT license, contributing and security documents.
 
