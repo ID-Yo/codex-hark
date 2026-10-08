@@ -1,93 +1,115 @@
 # Codex Hark
 
-Windows приложение (интерфейс на български и английски), което управлява Codex Desktop с глас. Слуша едновременно на български и английски:
+[English](README.md) · [Български](README.bg.md)
 
-| Фраза | Действие |
+> Say "Codex" to open Codex Desktop voice chat on Windows. A local wake-word listener for English and Bulgarian.
+
+Unofficial community project; not affiliated with or endorsed by OpenAI. "Codex" is the name of an OpenAI product.
+
+![Home screen of Codex Hark (sample data)](docs/screenshot.png)
+
+## Why
+
+Codex Desktop starts a voice chat with a hotkey (`Alt+Z`) but has no wake word, so you need a hand on the keyboard. Codex Hark listens for the word "Codex" on your computer, presses the hotkey for you, and closes the chat after a few seconds of silence, but not while Codex is still working.
+
+| Say | What happens |
 |---|---|
-| „Кодекс“ · “Codex” | Отваря гласов чат. Затваря го след 10 s тишина, но не докато Codex търси или мисли |
-| „Кодекс, пиши“ · “Codex, write” | Диктовка в текущия чат; след 4 s тишина текстът се изпраща на агента |
-| „Кодекс, чернова“ · “Codex, draft” | Диктовка; текстът остава в полето за преглед |
-| „Кодекс, стоп“ · “Codex, stop” | По време на гласов чат го затваря веднага |
+| "Codex" (Bulgarian: „Кодекс“) | Opens voice chat. Closes it after 10 s of silence, but not while Codex is searching or thinking |
+| "Codex, write" („Кодекс, пиши“) | Dictates into the current chat; after 4 s of silence the text is sent to the agent |
+| "Codex, draft" („Кодекс, чернова“) | Dictates; the text stays in the input box for review |
+| "Codex, stop" („Кодекс, стоп“) | Closes the voice chat at once |
 
-Разпознаването става изцяло на компютъра. Аудиото не се записва и не излиза навън.
+## Install
 
-## Изтегляне и първо пускане
+1. Download `CodexHark.exe` from [Releases](https://github.com/ID-Yo/codex-hark/releases).
+2. Verify the checksum against `SHA256SUMS.txt`:
 
-1. Изтеглете `CodexHark.exe` от последното издание в [Releases](https://github.com/ID-Yo/codex-hark/releases). Контролната сума е в `SHA256SUMS.txt`.
-2. Сложете файла където искате, например в `%LOCALAPPDATA%\Programs\CodexHark`. Инсталатор няма.
-3. Пуснете го. Файлът не е подписан, затова при първото пускане Windows SmartScreen може да покаже „Windows protected your PC“: изберете **More info → Run anyway**.
-4. Отваря се прозорецът, а в трея (до часовника, понякога под стрелката ^) се появява синята икона с микрофон. Включете **Стартирай с Windows** в екрана „Настройки“.
+   ```powershell
+   (Get-FileHash .\CodexHark.exe -Algorithm SHA256).Hash
+   ```
 
-Изисквания: Windows 10/11 с WebView2 Runtime (вграден в Windows 11), работещ Codex Desktop и `Alt+Z` като **Voice chat hotkey** в Settings на Codex.
+3. Put the file anywhere (there is no installer) and run it. The app is not signed, so Windows SmartScreen may show "Windows protected your PC" on first run: choose **More info > Run anyway**.
+4. The window opens and a blue microphone icon appears in the system tray. Turn on **Start with Windows** in Settings if you want it permanent.
 
-## Прозорецът
+Requirements: Windows 10 or 11 (64-bit) with the WebView2 Runtime (included in Windows 11), the Codex Desktop app, and `Alt+Z` set as the **Voice chat hotkey** in Codex settings.
 
-Прозорецът се отваря с ляв клик върху иконата в трея, с „Отвори“ в менюто ѝ или като пуснете exe файла още веднъж. X го скрива, а слушателят продължава да работи. Приложението спира само с „Изход“ от менюто в трея.
+## Use
 
-| Екран | Какво има |
+Say the wake word near your microphone. Left-click the tray icon, or run the exe again, to open the window; the X button hides it and the listener keeps running. Quit from the tray menu.
+
+| Screen | What it does |
 |---|---|
-| Начало | Състояние с Пауза/Продължи, дали Codex е отворен, живо ниво на микрофона, двете фрази, последните събития |
-| Гласови команди | Езици за разпознаване (вкл./изкл., изтегляне на модел), думите за всеки език (ключови, „пиши“, „чернова“, „стоп“, близки), затваряне след тишина (може да се изключи), секундите тишина, чувствителност |
-| Микрофон | Избор на микрофон, живо ниво, праг за говор, автоматично нагласяне, праг за гласа на Codex |
-| Дневник | Последните 1000 събития с търсене и филтри; без аудио и без текста на диктовката |
-| Настройки | Стартирай с Windows, известия, звуков сигнал, език (Български, English, както в Windows), тема (светла, тъмна, системна), връщане по подразбиране |
+| Home | Status, pause/resume, whether Codex is open, live microphone level, recent events |
+| Voice commands | Recognition languages, words for each language, silence timeout, sensitivity |
+| Microphone | Device choice, live level, speech threshold, automatic calibration |
+| Activity | Last 1000 events with search and filters |
+| Settings | Start with Windows, notifications, sound, interface language, theme, defaults |
 
-Промените по командите и микрофона се прилагат с „Запази“, без ръчен рестарт. Непозната за модела дума или стойност извън допустимото се показва до полето и не се записва. Езикът, темата и известията се запазват веднага.
+Tray icon colors: green listening, blue voice chat, orange dictation, gray paused, red error. Settings are stored in `%APPDATA%\CodexHark\settings.json`.
 
-Цветът на иконата в трея показва състоянието: зелено — слуша, синьо — гласов чат, оранжево — диктовка, сиво — пауза, червено — грешка. Менюто ѝ има Отвори, Пауза/Продължи, Рестартирай слушателя, Стартирай с Windows и Изход. При проблем се показва известие на Windows.
+The interface also opens in a browser with sample data: open `ui/index.html#home-light-en` (screen, theme and language are the parts of the hash).
 
-Настройките се пазят в `%APPDATA%\CodexHark\settings.json`, а дневникът — в `events.jsonl` и `wakeword.log` в същата папка. Променливите на средата `CODEX_WAKE_CONF`, `CODEX_IDLE_SECONDS` и `CODEX_DICTATION_IDLE_SECONDS` имат предимство пред файла.
+## Languages
 
+Each language has its own small offline [Vosk](https://alphacephei.com/vosk/) model and its own words. All enabled languages listen at the same time.
 
-## Езици за разпознаване
-
-Всеки език има собствен малък модел на Vosk и собствени думи. Всички включени езици слушат едновременно; ако един език чуе само ключовата дума, а друг цяла команда, командата печели.
-
-| Език | Модел | Размер |
+| Language | Model | Size |
 |---|---|---|
-| Български | `vosk-model-small-ru-0.22` (български Vosk модел няма; руският разбира и „Codex“), вграден в exe файла | 45 MB |
-| English | `vosk-model-small-en-us-0.15`, изтегля се при първото включване в `%APPDATA%\CodexHark\models` и се проверява SHA256 | 41 MB |
+| Bulgarian | `vosk-model-small-ru-0.22` (there is no Bulgarian Vosk model; the Russian one also understands "Codex"), bundled in the exe | 45 MB |
+| English | `vosk-model-small-en-us-0.15`, downloaded on first use to `%APPDATA%\CodexHark\models` and checked by SHA256 | 41 MB |
 
-Всеки включен език добавя около 200 MB памет; процесорът остава под 1%. Думите, които моделът не познава, се отказват при „Запази“.
+Each enabled language adds about 200 MB of memory; CPU stays under 1%.
 
-## Премахване
+## How it works
 
-Изключете **Стартирай с Windows**, изберете **Изход** и изтрийте exe файла. Ако не искате да остане нищо, изтрийте и `%APPDATA%\CodexHark`.
+1. The listener keeps the microphone open (16 kHz, mono) and feeds the audio to each enabled model. Recognition is limited to a short grammar: the wake words, the dictation words, similar-sounding decoy words and `[unk]`. So "code", "test" or "Alexa" trigger nothing, and "write" without "Codex" does nothing.
+2. "Codex" with enough confidence presses `Alt+Z`, the global voice-chat hotkey of Codex.
+3. "Codex, write" presses the `Dictate` button of the current chat through Windows UI Automation. After the silence timeout it presses `Transcribe and send`.
+4. To know whether Codex is using the microphone, Hark reads the Windows microphone-consent registry key of the Codex package. A voice chat is closed with `Alt+Z` when both the microphone and the Codex audio output (measured with pycaw) are quiet for the silence timeout.
+5. While a voice chat is open, Hark reads Codex's local thread-history database (read-only) to see whether the agent still has an unfinished turn. While it does, silence does not close the chat; after 5 minutes the silence rule applies again.
+6. Only one copy runs at a time; starting a second shows the window of the first.
 
-## Как работи
+## Limitations and privacy
 
-1. Слушателят държи микрофона отворен (16 kHz, моно) и подава звука на модела на всеки включен език. Разпознаването е ограничено до кратка граматика: ключовите думи, думите за диктовка, близко звучащите думи и `[unk]`. Затова „код“, „тест“ и „Алекса“ не задействат нищо, а „пиши“ без „Кодекс“ пред него също не прави нищо.
-2. „Кодекс“ с увереност поне `min_conf` натиска `Alt+Z`, глобалната комбинация за гласов чат в Codex.
-3. „Кодекс, пиши“ натиска бутона `Dictate` на текущия чат чрез Windows UI Automation (`Alt+X` работи само докато Codex е на фокус). Диктовката е активна, докато има бутон `Stop dictation`. След `dictation_idle_seconds` без говор слушателят натиска `Transcribe and send`.
-4. Дали Codex използва микрофона, слушателят разбира от регистъра: `HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone\OpenAI.Codex_2p2nqsd0c76g0` има `LastUsedTimeStop == 0`. Ако има бутон `Stop dictation`, това е ръчно пусната диктовка и слушателят не я пипа. Иначе е гласов чат и се затваря с `Alt+Z`, когато микрофонът и звукът на `ChatGPT.exe` (мерен с pycaw) са тихи `idle_seconds` секунди.
-5. Докато гласовият чат е отворен, слушателят чете от базата на Codex (`%USERPROFILE%\.codex\thread_history_*.sqlite`, само за четене) дали агентът на активния гласов чат има незавършен ход (`inProgress`). Докато има, т.е. Codex търси, мисли или ползва инструменти, тишината не затваря разговора; след 5 минути правилото за тишина важи отново. В разговор слушателят разпознава само фразата за край: ключова дума + `стоп`/`край`.
-6. Работи само едно копие (mutex `Local\CodexHark`); второ пускане показва прозореца на работещото копие.
+- Audio is processed on your computer by an offline model. It is never recorded or sent anywhere. The only network access is the one-time download of the English model from `alphacephei.com`, verified by SHA256.
+- The activity log (`events.jsonl`, `wakeword.log` in `%APPDATA%\CodexHark`) stores event types, times and confidence values. It never holds audio or dictated text.
+- Hark depends on internals of Codex Desktop: `Alt+Z`, the English button names `Dictate`, `Stop dictation` and `Transcribe and send`, the package name, the `ChatGPT.exe` process and the thread-history database. If Codex changes them, Hark needs an update.
+- Say "Codex, write" as one phrase; a long pause between the words can open a voice chat instead.
+- Silence thresholds were tuned on one laptop microphone; another microphone may need adjusting in the Microphone screen.
+- On every start the exe unpacks about 200 MB to `%TEMP%` (usually drive C:) and removes it on exit.
+- Synthetic speech from loudspeakers is recognized less reliably than a live voice.
 
-## Ограничения
+## Uninstall
 
-- Казвайте „Кодекс, пиши“ слято. Ако между двете думи има дълга пауза, може да се отвори гласов чат.
-- Всяка пауза от `dictation_idle_seconds` изпраща диктовката, дори да не сте довършили. Ако мислите с паузи, увеличете стойността.
-- Ако Codex мълчи, без да работи (например чака вашия отговор), разговорът се затваря след `idle_seconds`. Сигналът „Codex работи“ идва от вътрешната база на Codex; ако тя смени формата си, остава само правилото за тишина.
-- Приложението разчита на вътрешни неща в Codex: `Alt+Z`, английските имена на бутоните `Dictate`, `Stop dictation` и `Transcribe and send`, името на пакета `OpenAI.Codex_2p2nqsd0c76g0` и процеса `ChatGPT.exe`. Ако Codex ги промени, приложението трябва да се обнови.
-- Праговете за тишина са нагласени по Realtek Microphone Array на един лаптоп. При друг микрофон може да трябва да се сменят.
-- При всяко пускане exe файлът разархивира около 200 MB във `%TEMP%` (диск C:) и ги трие при „Изход“. При много малко свободно място на C: няма да тръгне.
-- Синтезиран глас от високоговорителите се разпознава само при силен звук; тестовете с него са по-ненадеждни от жив глас.
+Turn off **Start with Windows**, choose **Quit** in the tray menu and delete the exe. Delete `%APPDATA%\CodexHark` as well if you want nothing left.
 
-## Разработка
+## Build from source
 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
-# моделът (около 45 MB), ако папката липсва:
-Invoke-WebRequest https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip -OutFile model.zip
-Expand-Archive model.zip -DestinationPath .; Remove-Item model.zip
-
-.\.venv\Scripts\pythonw.exe app.py      # приложението с прозорец и икона в трея
-.\.venv\Scripts\python.exe wakeword.py  # само слушателят, без трей
-.\.venv\Scripts\python.exe -m unittest discover -s tests
+.\.venv\Scripts\python -m unittest discover -s tests
+.\.venv\Scripts\pythonw.exe app.py   # needs the Bulgarian model folder, see build.ps1
+./build.ps1                            # clean venv, model check, tests, dist\CodexHark.exe and SHA256SUMS.txt
 ```
 
-`./build.ps1` създава чиста среда в `build\venv`, проверява SHA256 на модела, пуска тестовете и изгражда `dist\CodexHark.exe` с PyInstaller. В GitHub Actions всеки push изгражда exe като artifact, а таг `v*`, който съвпада с `__version__` в `wakeword.py`, създава Release. Интерфейсът е в ui/; ui/index.html#commands-dark-en го показва в браузър с тестови данни.
+`build.ps1` downloads and verifies the Bulgarian model, runs the tests and builds one exe with PyInstaller. Every push builds the exe in GitHub Actions; a tag `vX.Y.Z` that matches `__version__` in `wakeword.py` creates a Release.
 
-## Документация
+## Project layout
 
+| Path | Purpose |
+|---|---|
+| `app.py` | Tray icon, window (pywebview), single-instance handling, autostart |
+| `wakeword.py` | Listener, recognition grammar, settings, language models |
+| `ui/` | Window interface (HTML, CSS, JS) |
+| `tests/` | Unit tests for the pure logic |
+| `build.ps1` | Reproducible build and checksum |
+| `.github/workflows/` | CI build and Release on version tags |
+
+## Help and contributing
+
+Questions and bugs: open an [issue](https://github.com/ID-Yo/codex-hark/issues). See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for coding agents. Security reports: [SECURITY.md](SECURITY.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE). Bundled third-party components and their licenses: [THIRD_PARTY.md](THIRD_PARTY.md).
