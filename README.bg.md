@@ -93,4 +93,4 @@ Expand-Archive model.zip -DestinationPath .; Remove-Item model.zip
 .\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
-`./build.ps1` създава чиста среда в `build\venv`, проверява SHA256 на модела, пуска тестовете и изгражда `dist\CodexHark.exe` с PyInstaller. В GitHub Actions всеки push изгражда exe като artifact, а таг `v*`, който съвпада с `__version__` в `wakeword.py`, създава Release. Интерфейсът е в ui/; ui/index.html#commands-dark-en го показва в браузър с тестови данни.
+`./build.ps1` създава чиста среда в `build\venv`, проверява SHA256 на модела, пуска тестовете и изгражда `dist\CodexHark.exe` с PyInstaller. В GitHub Actions всеки push изгражда exe като artifact, а таг `v*`, който съвпада с `__version__` в `wakeword.py`, създава Release с  е в ui/; ui/index.html#commands-dark-en го показва в браузър с тестови данни.

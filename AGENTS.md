@@ -17,7 +17,7 @@ Instructions for coding agents in this repository. README.md explains the produc
 - `app.py`: tray icon, pywebview window and its `Api`, single-instance event, autostart, icon drawing
 - `ui/`: HTML, CSS and JS; all user-visible strings exist in Bulgarian and English in `ui/app.js`, tray and notification strings in `app.py` and `wakeword.py`
 - `tests/test_wakeword.py`: tests for pure logic only; no microphone, no Codex
-- `.github/workflows/build.yml`: CI build; a tag `vX.Y.Z` equal to `__version__` creates a Release
+- `.github/workflows/build.yml`: CI build; a tag `vX.Y.Z` +`+__version__+`+ creates a Release`__version__` creates a Release
 
 ## Conventions
 
