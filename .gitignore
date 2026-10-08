@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+/memory/dreamer/lock.json
+/memory/dreamer/command.lock
+/memory/dreamer/state.json
+/memory/dreamer/work/
+*.tmp
+
+# Local runtime
+/.venv/
+/vosk-model-small-ru-0.22/
+/wakeword.log
+/build/
+/dist/
