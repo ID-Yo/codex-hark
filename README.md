@@ -93,7 +93,7 @@ py -3.13 -m venv .venv
 ./build.ps1                            # clean venv, model check, tests, dist\CodexHark.exe and SHA256SUMS.txt
 ```
 
-`build.ps1` downloads and verifies the Bulgarian model, runs the tests and builds one exe with PyInstaller. Every push builds the exe in GitHub Actions; a tag `vX.Y.Z` that matches `__version__` in `wakeword.py` creates a Release.
+`build.ps1` downloads and verifies the Bulgarian model, runs the tests and builds one exe with PyInstaller. Every push builds the exe in GitHub Actions; +`+vX.Y.Z+`+ that matches +`+__version__+`+ in +`+wakeword.py+`+ creates a Release.`vX.Y.Z` that matches `__version__` in `wakeword.py` creates a Release.
 
 ## Project layout
 
