@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -156,6 +156,7 @@ DEFAULTS = {
     "theme": "system",
     "language": "auto",  # auto: Bulgarian when Windows is in Bulgarian, otherwise English
     "update_check": True,  # look for a new release on GitHub after start and every UPDATE_INTERVAL_S
+    "update_install": True,  # install a found release by itself (exe only), when no conversation is open
     "keys_checked": False,  # the first-run check of Codex's shortcuts has been done
 }
 # Allowed range of each number setting.
@@ -200,6 +201,9 @@ MESSAGES = {
     "words_unknown": {"bg": ("Моделът за {language} не познава: {words}", "тези думи няма да се разпознават"),
                       "en": ("The {language} model does not know: {words}", "these words will not be recognized")},
     "update_available": {"bg": ("Има нова версия: {version}", "имате {current}"), "en": ("A new version is available: {version}", "you have {current}")},
+    "update_installing": {"bg": ("Инсталира версия {version}", "Hark ще се рестартира"), "en": ("Installing version {version}", "Hark will restart")},
+    "update_failed": {"bg": ("Обновяването не успя", "{error}"), "en": ("The update failed", "{error}")},
+    "update_done": {"bg": ("Hark е обновен до {version}", "от {previous}"), "en": ("Hark was updated to {version}", "from {previous}")},
     "update_current": {"bg": ("Hark е последна версия", "{current}"), "en": ("Hark is up to date", "{current}")},
     "update_error": {"bg": ("Проверката за нова версия не успя", "{error}"), "en": ("The update check failed", "{error}")},
     "keys_ok": {"bg": ("Shortcut-ите на Codex са наред", "гласов чат {voice}, диктовка {dictation}"),
@@ -506,6 +510,8 @@ LATEST_RELEASE_API = "https://api.github.com/repos/ID-Yo/codex-hark/releases/lat
 RELEASE_PAGE = re.compile(r"https://github\.com/id-yo/codex-hark/releases/tag/v\d+(\.\d+){1,3}")
 UPDATE_INTERVAL_S = 12 * 3600  # two checks a day
 UPDATE_FIRST_DELAY_S = 60  # the first check, after start
+RELEASE_ASSETS = "https://github.com/id-yo/codex-hark/releases/download/"
+EXE_NAME = "CodexHark.exe"
 
 
 def version_tuple(text):
@@ -524,7 +530,62 @@ def latest_release(timeout=15):
     if version is None:
         raise ValueError(f"unexpected release tag {data.get('tag_name')!r}")
     url = str(data.get("html_url", ""))
-    return {"version": ".".join(map(str, version)), "url": url if RELEASE_PAGE.fullmatch(url.lower()) else ""}
+    assets = {a.get("name"): str(a.get("browser_download_url", "")) for a in data.get("assets") or []}
+    own = lambda u: u if u.lower().startswith(RELEASE_ASSETS) else ""  # noqa: E731
+    return {"version": ".".join(map(str, version)), "url": url if RELEASE_PAGE.fullmatch(url.lower()) else "",
+            "exe": own(assets.get(EXE_NAME, "")), "sums": own(assets.get("SHA256SUMS.txt", ""))}
+
+
+def _fetch(url, timeout=60):
+    request = urllib.request.Request(url, headers={"User-Agent": f"CodexHark/{__version__}"})
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
+def download_update(release, folder):
+    """Download the release exe into folder and check it against the release SHA256SUMS.txt. Returns its path.
+    Raises OSError/ValueError; a file that does not match is deleted."""
+    if not release.get("exe") or not release.get("sums"):
+        raise ValueError("the release has no CodexHark.exe or SHA256SUMS.txt")
+    with _fetch(release["sums"], 30) as response:
+        sums = response.read().decode("utf-8", "replace")
+    want = next((line.split()[0].lower() for line in sums.splitlines()
+                 if len(line.split()) == 2 and line.split()[1].lstrip("*") == EXE_NAME), None)
+    if not want or not re.fullmatch(r"[0-9a-f]{64}", want):
+        raise ValueError("SHA256SUMS.txt has no hash for CodexHark.exe")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, EXE_NAME)
+    digest = hashlib.sha256()
+    with _fetch(release["exe"]) as response, open(path + ".part", "wb") as f:
+        for chunk in iter(lambda: response.read(1 << 20), b""):
+            digest.update(chunk)
+            f.write(chunk)
+    if digest.hexdigest() != want:
+        os.remove(path + ".part")
+        raise ValueError("the downloaded file does not match its SHA256")
+    os.replace(path + ".part", path)
+    return path
+
+
+def install_update(new_exe, exe):
+    """Put new_exe in place of the running exe. Windows lets a running exe be renamed, so it becomes exe.old
+    (deleted on the next start); if the move fails the old exe is put back."""
+    old = exe + ".old"
+    if os.path.exists(old):
+        os.remove(old)
+    os.replace(exe, old)
+    try:
+        shutil.move(new_exe, exe)
+    except OSError:
+        os.replace(old, exe)
+        raise
+
+
+def remove_old_exe(exe):
+    """Delete exe.old left by an update; it stays if the old process still holds it."""
+    try:
+        os.remove(exe + ".old")
+    except OSError:
+        pass
 
 
 def update_status(latest, current=None):
