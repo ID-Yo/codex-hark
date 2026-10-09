@@ -48,7 +48,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -119,6 +119,7 @@ WORD_LISTS = ("wake_words", "send_words", "draft_words", "stop_words", "decoys")
 COMMAND_LISTS = WORD_LISTS[:4]  # a word may appear in only one of these per language
 OLD_WORD_KEYS = ("wake_words", "dictate_words", "stop_words", "decoys", "dictation_send")
 THEMES = ("system", "light", "dark")
+MAX_PHRASE_WORDS = 3  # a wake phrase such as "hey jarvis"; the other lists hold single words
 LANGUAGES = ("auto", "bg", "en")
 # Environment variables keep working and win over settings.json.
 ENV_OVERRIDES = {"min_conf": "CODEX_WAKE_CONF", "idle_seconds": "CODEX_IDLE_SECONDS",
@@ -149,6 +150,8 @@ MESSAGES = {
     "busy_start": {"bg": ("Codex работи, разговорът остава отворен", ""), "en": ("Codex is working, the conversation stays open", "")},
     "busy_end": {"bg": ("Codex приключи", ""), "en": ("Codex finished", "")},
     "busy_limit": {"bg": ("Codex работи над {minutes} минути", "тишината отново затваря разговора"), "en": ("Codex has been working for over {minutes} minutes", "silence closes the conversation again")},
+    "words_unknown": {"bg": ("Моделът за {language} не познава: {words}", "тези думи няма да се разпознават"),
+                      "en": ("The {language} model does not know: {words}", "these words will not be recognized")},
     "settings_saved": {"bg": ("Настройките са запазени", ""), "en": ("Settings saved", "")},
 }
 ERRORS = {
@@ -159,6 +162,8 @@ ERRORS = {
     "choice": {"bg": "Невалиден избор.", "en": "Invalid choice."},
     "type": {"bg": "Невалиден тип.", "en": "Invalid type."},
     "overlap": {"bg": "Една дума може да е само в един списък на езика.", "en": "A word can be in only one list per language."},
+    "one_word": {"bg": "Тук се допуска само една дума: {words}.", "en": "Only single words are allowed here: {words}."},
+    "too_long": {"bg": "Фразата може да е най-много от {n} думи: {words}.", "en": "A phrase can have at most {n} words: {words}."},
     "no_language": {"bg": "Включете поне един език.", "en": "Turn on at least one language."},
 }
 
@@ -214,7 +219,17 @@ def setup_logging():
 def _clean_words(value):
     if not isinstance(value, list) or not all(isinstance(w, str) for w in value):
         return None
-    return list(dict.fromkeys(w.strip().lower() for w in value if w.strip()))
+    return list(dict.fromkeys(" ".join(w.lower().split()) for w in value if w.strip()))
+
+
+def _word_error(key, words, code, known_word, msg):
+    """The message for the first problem in one word list, or None. Only wake_words may hold phrases."""
+    limit = MAX_PHRASE_WORDS if key == "wake_words" else 1
+    long = ", ".join(w for w in words if len(w.split()) > limit)
+    if long:
+        return msg("too_long", n=limit, words=long) if limit > 1 else msg("one_word", words=long)
+    unknown = [t for w in words for t in w.split() if known_word and not known_word(code, t)]
+    return msg("unknown", words=", ".join(dict.fromkeys(unknown))) if unknown else None
 
 
 def _validate_languages(value, known_word, msg, errors):
@@ -244,8 +259,8 @@ def _validate_languages(value, known_word, msg, errors):
                 errors[path] = msg("list")
             elif key == "wake_words" and not words:
                 errors[path] = msg("empty")
-            elif unknown := [w for w in words if " " in w or (known_word and not known_word(code, w))]:
-                errors[path] = msg("unknown", words=", ".join(unknown))
+            elif problem := _word_error(key, words, code, known_word, msg):
+                errors[path] = problem
             else:
                 clean[key] = words
         seen = set()
@@ -498,12 +513,22 @@ def codex_windows():
 
 
 def heard(result_json, words, min_conf):
-    """Return (wake word or "", the word after it, confidence) for a final Vosk result of one language."""
+    """Return (wake word or phrase, the word after it, confidence) for a final Vosk result of one language.
+
+    A wake phrase such as "hey jarvis" must be heard as all of its words in a row; its confidence is the
+    mean of theirs. Longer phrases win over shorter ones that start at the same word.
+    """
     found = json.loads(result_json).get("result", [])
-    for i, w in enumerate(found):
-        if w["word"] in words["wake_words"] and w["conf"] >= min_conf:
-            following = found[i + 1]["word"] if i + 1 < len(found) else ""
-            return w["word"], following, w["conf"]
+    phrases = sorted((p.split() for p in words["wake_words"]), key=len, reverse=True)
+    for i in range(len(found)):
+        for phrase in phrases:
+            part = found[i:i + len(phrase)]
+            if [w["word"] for w in part] != phrase:
+                continue
+            conf = sum(w["conf"] for w in part) / len(part)
+            if conf >= min_conf:
+                end = i + len(phrase)
+                return " ".join(phrase), found[end]["word"] if end < len(found) else "", conf
     return "", "", 0.0
 
 
@@ -543,9 +568,20 @@ def codex_busy(db=None):
 
 
 def grammar(words):
-    """Vosk grammar of one language: every command word plus [unk] for everything else."""
+    """Vosk grammar of one language: every command word or phrase plus [unk] for everything else."""
     words = [w for key in WORD_LISTS for w in words[key]] + ["[unk]"]
     return json.dumps(list(dict.fromkeys(words)), ensure_ascii=False)
+
+
+def model_knows(model, word):
+    """Is the word in the vocabulary of the loaded Vosk model? Vosk silently ignores words that are not."""
+    return vosk._c.vosk_model_find_word(model._handle, word.encode("utf-8")) >= 0
+
+
+def unknown_words(model, words):
+    """The words of one language's lists (phrases split into words) that the model does not know."""
+    return list(dict.fromkeys(t for key in WORD_LISTS for w in words[key] for t in w.split()
+                              if not model_knows(model, t)))
 
 
 class Listener:
@@ -554,7 +590,7 @@ class Listener:
     def __init__(self, settings, on_state=None, on_problem=None, paused=None, events=None):
         self.s = settings
         self.on_state = on_state or (lambda state: None)
-        self.on_problem = on_problem or (lambda key: None)
+        self.on_problem = on_problem or (lambda key, **args: None)
         self.paused = paused or threading.Event()
         self.events = events or EventLog(os.devnull)
         self.stopped = threading.Event()
@@ -567,11 +603,6 @@ class Listener:
 
     def stop(self):
         self.stopped.set()
-
-    def knows_word(self, lang, word):
-        """Does the language model know the word? True when its model is not loaded yet."""
-        model = self.models.get(lang)
-        return model is None or vosk._c.vosk_model_find_word(model._handle, word.encode("utf-8")) >= 0
 
     def _set(self, state):
         if state != self.state:
@@ -615,6 +646,10 @@ class Listener:
                 path = model_dir(lang) if words["enabled"] else None
                 if path:
                     self.models[lang] = Model(path)
+                    if unknown := unknown_words(self.models[lang], words):
+                        logging.warning("%s: the model does not know %s; these words are ignored", lang, ", ".join(unknown))
+                        self.events.add("error", "words_unknown", language=lang, words=", ".join(unknown))
+                        self.on_problem("words", language=lang, words=", ".join(unknown))
                     rec = KaldiRecognizer(self.models[lang], RATE, grammar(words))
                     rec.SetWords(True)
                     recs.append((lang, rec))

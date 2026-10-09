@@ -26,17 +26,19 @@ TEXT = {
     "bg": {"title": "Codex Hark", "open": "Отвори", "pause": "Пауза", "resume": "Продължи",
            "restart": "Рестартирай слушателя", "autostart": "Стартирай с Windows", "quit": "Изход",
            "running": "Codex Hark вече работи.",
+           "words": "Моделът за {language} не познава: {words}. Тези думи няма да се разпознават.",
            "mic": "Няма достъп до микрофона. Нов опит след 10 s.",
            "codex": "Бутонът Dictate не е намерен. Отворен ли е Codex?",
            "crash": "Слушателят се срина и се рестартира: {error}",
            "stopped": "Слушателят спря: {error} Отворете прозореца и изберете „Рестартирай слушателя“.",
            "states": {"starting": "стартира", "listening": "слуша", "chat": "гласов чат",
                       "dictation": "диктовка", "paused": "пауза", "error": "грешка"}},
-    "en": {"title": "Codex Listener", "open": "Open", "pause": "Pause", "resume": "Resume",
+    "en": {"title": "Codex Hark", "open": "Open", "pause": "Pause", "resume": "Resume",
            "restart": "Restart listener", "autostart": "Start with Windows", "quit": "Quit",
-           "running": "Codex Listener is already running.",
+           "running": "Codex Hark is already running.",
            "mic": "The microphone is not available. Retrying in 10 s.",
            "codex": "The Dictate button was not found. Is Codex open?",
+           "words": "The {language} model does not know: {words}. These words will not be recognized.",
            "crash": "The listener crashed and is restarting: {error}",
            "stopped": "The listener stopped: {error} Open the window and choose Restart listener.",
            "states": {"starting": "starting", "listening": "listening", "chat": "voice chat",
@@ -196,12 +198,25 @@ class Api:
 
     def save_settings(self, raw):
         app = self._app
-        settings, errors = ww.validate_settings(raw, app.knows_word, app.lang())
+        settings, errors = ww.validate_settings(raw, app.word_checker(), app.lang())
         if errors:
             return {"ok": False, "errors": errors}
         ww.save_settings(settings)
         app.apply_settings(settings)
         return {"ok": True, "settings": settings}
+
+    def check_words(self, lang, text):
+        """Which words of a typed word or phrase the language's model knows, so the window can say so before Save.
+        status: "ok", "unknown" (a word is missing from the model) or "no_model" (the model is not installed)."""
+        words = text.lower().split()
+        if lang not in ww.MODELS or not words:
+            return {"status": "ok", "words": []}
+        listener = self._app.listener
+        if (not listener or lang not in listener.models) and ww.model_dir(lang) is None:
+            return {"status": "no_model", "words": [{"word": w, "known": None} for w in words]}
+        known = self._app.word_checker()
+        found = [{"word": w, "known": known(lang, w)} for w in words]
+        return {"status": "ok" if all(f["known"] for f in found) else "unknown", "words": found}
 
     def reset_settings(self):
         ww.save_settings(ww.DEFAULTS)
@@ -311,8 +326,20 @@ class App:
             self._codex = (time.monotonic(), bool(ww.codex_windows()))
         return self._codex[1]
 
-    def knows_word(self, lang, word):
-        return self.listener.knows_word(lang, word) if self.listener else True
+    def word_checker(self):
+        """known_word(lang, word) for validation: the listener's model, else the installed model loaded for
+        this checker's lifetime, else True (a model that is not installed cannot be asked)."""
+        loaded = {}
+
+        def known(lang, word):
+            model = self.listener.models.get(lang) if self.listener else None
+            if model is None:
+                if lang not in loaded:
+                    path = ww.model_dir(lang)
+                    loaded[lang] = ww.Model(path) if path else None
+                model = loaded[lang]
+            return model is None or ww.model_knows(model, word)
+        return known
 
     def download(self, code):
         """Download a language model in the background, then restart the listener."""
@@ -343,6 +370,8 @@ class App:
                 self.download(code)
 
     def problem(self, key, **args):
+        if "language" in args:
+            args["language"] = ww.LANGUAGE_NAMES[self.lang()].get(args["language"], args["language"])
         self.notify(key, self.t(key).format(**args))
 
     def notify(self, key, message):

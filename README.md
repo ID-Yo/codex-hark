@@ -49,6 +49,19 @@ Tray icon colors: green listening, blue voice chat, orange dictation, gray pause
 
 The interface also opens in a browser with sample data: open `ui/index.html#home-light-en` (screen, theme and language are the parts of the hash).
 
+## Change the wake word
+
+Open **Voice commands**, choose the language and edit **Wake words**. A wake word can also be a phrase of up to three words, for example "hey jarvis" in English or „хей кодекс“ in Bulgarian. The command words (write, draft, stop) and the similar words stay single words.
+
+The speech model recognizes only words from its own vocabulary. While you type, Hark checks every word against the model and tells you whether it can be used, so a word the model does not know is refused before you press **Save**.
+
+![Checking the phrase “hey jarvis” in Voice commands (sample data)](docs/screenshot-wake-words.png)
+
+- The Bulgarian slot uses a Russian model, so write Bulgarian words in Russian spelling (for example „хей“, „кодекс“). Words that exist only in Bulgarian, such as „бобър“, are not in the vocabulary.
+- Choose a distinctive word that is rare in everyday speech. A phrase must be heard as all of its words in a row, and its confidence is the mean of its words' confidences.
+- Put similar-sounding words in **Similar words**, so that near misses do not trigger the wake word.
+- If the model of a language is not downloaded yet, its words cannot be checked. Hark then warns on start and marks in red the saved words the model does not know, because the listener ignores them.
+
 ## Languages
 
 Each language has its own small offline [Vosk](https://alphacephei.com/vosk/) model and its own words. All enabled languages listen at the same time.
