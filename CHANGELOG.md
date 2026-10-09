@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.14.2] - 2026-10-09
+
+### Fixed
+- After a self-update Hark really starts the new version. The old version closed itself before it started the new one, and its process ended with the window. It now stops listening, starts the new exe, waits until it runs (or retries and rolls back), and only then closes.
+
 ## [0.14.1] - 2026-10-09
 
 ### Fixed

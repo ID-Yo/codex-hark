@@ -332,6 +332,7 @@ class App:
         self.last_notice = {}
         self.update = None  # the last update check result for the window
         self.release = None  # a newer release found by the last check
+        self.updating = False
         self._codex = (0.0, False)
         self.images = {state: make_image(color) for state, color in COLORS.items()}
         t = self.t
@@ -476,7 +477,7 @@ class App:
         """Download the found release, check its SHA256, swap the exe and start the new one. Returns an error text
         (None when the new version is starting)."""
         release = self.release
-        if not release or not getattr(sys, "frozen", False):
+        if not release or self.updating or not getattr(sys, "frozen", False):
             return self.t("update_unavailable")
         args = {"version": release["version"], "current": ww.__version__}
         try:
@@ -490,17 +491,25 @@ class App:
             self.release = None  # do not retry this release until the next check
             return f"{text} — {detail}"
         logging.info("installed %s; starting it", release["version"])
-        # Not a daemon: this process stays alive (without its window and tray icon) until the new one runs.
-        threading.Thread(target=self.start_new_version, args=(manual,), name="update").start()
+        threading.Thread(target=self.start_new_version, args=(manual,), name="update", daemon=True).start()
         return None
 
     def start_new_version(self, manual):
-        """Close this version, start the new exe and wait until it says it runs. A freshly written one-file exe
-        sometimes fails to unpack (it then shows an error box and hangs), so try again a few times and put the
-        old exe back if the new one never starts."""
-        exe, previous = sys.executable, ww.__version__
+        """Stop listening, start the new exe and wait until it says it runs; only then close this version (its
+        process ends with the window). A freshly written one-file exe can fail to unpack (for example on a full
+        disk; it then shows an error box and hangs), so try again a few times and put the old exe back if the new
+        one never starts."""
+        try:
+            self._start_new_version(manual)
+        except Exception:
+            logging.exception("starting the new version failed")
         self.quit()
-        time.sleep(2)
+
+    def _start_new_version(self, manual):
+        exe, previous = sys.executable, ww.__version__
+        self.updating = True
+        if self.listener:
+            self.listener.stop()  # frees the microphone; supervise() ends because no restart is requested
         ww.release_single_instance()
         ready = kernel32.CreateEventW(None, True, False, UPDATED_EVENT)
         # A fresh start of the one-file exe: without this it inherits this process's PyInstaller variables and
@@ -514,8 +523,9 @@ class App:
                 return
             logging.warning("the new version did not start (try %d of %d)", attempt, UPDATE_START_TRIES)
             kill_tree(process.pid)
-        try:
-            ww.install_update(exe + ".old", exe)  # put the old exe back
+        try:  # put the old exe (this process's own file, now exe.old) back
+            os.remove(exe)
+            os.replace(exe + ".old", exe)
         except OSError:
             logging.exception("cannot put the old version back")
         logging.warning("update rolled back to %s", previous)
@@ -531,7 +541,7 @@ class App:
                 if self.settings.get("update_check", True):
                     self.check_updates()
             # Install a found release by itself, but never in the middle of a conversation or dictation.
-            if (self.release and self.settings.get("update_install", True) and getattr(sys, "frozen", False)
+            if (self.release and not self.updating and self.settings.get("update_install", True) and getattr(sys, "frozen", False)
                     and self.state in ("listening", "paused")):
                 self.install_update()
 
