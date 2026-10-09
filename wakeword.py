@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -493,7 +493,8 @@ def window_rect(area_x, area_y, area_width, area_height, want=(880, 600)):
 
 
 # The only addresses the window may open in the browser (About screen).
-ABOUT_LINKS = ("https://ivanyosifov.com", "https://github.com/id-yo/codex-hark")
+ABOUT_LINKS = ("https://ivanyosifov.com", "https://github.com/id-yo/codex-hark",
+               "https://buymeacoffee.com/ivan.yosifov", "https://paypal.me/ivanyosifov")
 
 
 def about_link(url):

@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-09
+
+### Added
+- About links to the donation pages (Buy Me a Coffee, PayPal).
+
+### Changed
+- Discard and Save are at the top right and stay there while you scroll, so unsaved changes are hard to miss.
+
 ## [0.12.0] - 2026-10-09
 
 ### Added

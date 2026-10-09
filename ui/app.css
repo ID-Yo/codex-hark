@@ -133,7 +133,9 @@ select { height: 32px; border: 1px solid var(--control-border); border-radius: 8
 .alert.warn { background: var(--warning-soft); color: var(--warning); }
 .alert.ok { background: var(--good-soft); color: var(--good); }
 .alert.err { background: var(--error-soft); color: var(--error); }
-.savebar { position: sticky; bottom: 0; display: flex; gap: 10px; align-items: center; justify-content: flex-end; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px rgb(16 30 53 / 14%); }
+#savebar-slot { position: sticky; top: 0; z-index: 5; height: 0; margin-bottom: -10px; display: flex; justify-content: flex-end; align-items: flex-start; }
+#savebar-slot .savebar { max-width: 62%; }
+.savebar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px rgb(16 30 53 / 14%); }
 .savebar small { flex: 1; }
 .filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .search { flex: 1; max-width: 260px; height: 30px; border: 1px solid var(--control-border); border-radius: 8px; display: flex; align-items: center; gap: 8px; padding: 0 10px; color: var(--subtle); background: var(--surface); }

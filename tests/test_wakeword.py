@@ -206,6 +206,7 @@ class UpdateCheckTests(unittest.TestCase):
             self.assertRaises(ValueError, ww.latest_release)
         self.assertTrue(ww.about_link(page))
         self.assertFalse(ww.about_link(page + "/../../x"))
+        self.assertTrue(ww.about_link("https://paypal.me/IvanYosifov") and ww.about_link("https://buymeacoffee.com/ivan.yosifov"))
 
 
 class ValidateSettingsTests(unittest.TestCase):
