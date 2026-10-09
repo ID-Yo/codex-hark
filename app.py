@@ -21,6 +21,9 @@ RUN_VALUE = ww.APP_NAME
 OLD_SHORTCUT = os.path.join(os.environ.get("APPDATA", ""), "Microsoft", "Windows", "Start Menu",
                             "Programs", "Startup", "Codex Wake Word.lnk")
 SHOW_EVENT = "Local\\CodexHarkShow"  # set by a second launch to bring up the window
+UPDATED_EVENT = "Local\\CodexHarkUpdated"  # set by the new version once it runs after an update
+UPDATE_START_TRIES = 3
+UPDATE_START_WAIT_MS = 60000
 COLORS = {"starting": (120, 132, 150), "listening": (7, 139, 69), "chat": (8, 104, 222),
           "dictation": (214, 106, 0), "paused": (120, 132, 150), "error": (181, 40, 53)}
 TEXT = {
@@ -487,10 +490,36 @@ class App:
             self.release = None  # do not retry this release until the next check
             return f"{text} — {detail}"
         logging.info("installed %s; starting it", release["version"])
-        subprocess.Popen([sys.executable, "--after-update", str(os.getpid()), "--previous", ww.__version__]
-                         + ([] if manual else ["--hidden"]), close_fds=True)
-        threading.Thread(target=self.quit, daemon=True).start()
+        # Not a daemon: this process stays alive (without its window and tray icon) until the new one runs.
+        threading.Thread(target=self.start_new_version, args=(manual,), name="update").start()
         return None
+
+    def start_new_version(self, manual):
+        """Close this version, start the new exe and wait until it says it runs. A freshly written one-file exe
+        sometimes fails to unpack (it then shows an error box and hangs), so try again a few times and put the
+        old exe back if the new one never starts."""
+        exe, previous = sys.executable, ww.__version__
+        self.quit()
+        time.sleep(2)
+        ww.release_single_instance()
+        ready = kernel32.CreateEventW(None, True, False, UPDATED_EVENT)
+        # A fresh start of the one-file exe: without this it inherits this process's PyInstaller variables and
+        # looks for its files in this process's temporary folder, which is deleted when this process exits.
+        env = {**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"}
+        command = [exe, "--after-update", "--previous", previous] + ([] if manual else ["--hidden"])
+        for attempt in range(1, UPDATE_START_TRIES + 1):
+            process = subprocess.Popen(command, close_fds=True, env=env)
+            if kernel32.WaitForSingleObject(ready, UPDATE_START_WAIT_MS) == 0:
+                logging.info("the new version runs")
+                return
+            logging.warning("the new version did not start (try %d of %d)", attempt, UPDATE_START_TRIES)
+            kill_tree(process.pid)
+        try:
+            ww.install_update(exe + ".old", exe)  # put the old exe back
+        except OSError:
+            logging.exception("cannot put the old version back")
+        logging.warning("update rolled back to %s", previous)
+        subprocess.Popen([exe] + ([] if manual else ["--hidden"]), close_fds=True, env=env)
 
     def watch_updates(self):
         """Check for a new version a minute after start and then every 12 hours, while the setting is on."""
@@ -615,6 +644,16 @@ class App:
         webview.start(private_mode=True, storage_path=os.path.join(ww.DATA_DIR, "webview"), icon=icon)
 
 
+def kill_tree(pid):
+    try:
+        process = ww.psutil.Process(pid)
+        for child in process.children(recursive=True):
+            child.kill()
+        process.kill()
+    except ww.psutil.Error:
+        pass
+
+
 def migrate_legacy_autostart():
     """Move the start-up entry of the pre-rename CodexSlushatel build to this build."""
     try:
@@ -630,25 +669,30 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog=ww.APP_NAME)
     parser.add_argument("--autostart", choices=["on", "off"], help="turn start with Windows on or off")
     parser.add_argument("--hidden", action="store_true", help="start in the tray without opening the window")
-    parser.add_argument("--after-update", type=int, metavar="PID", help=argparse.SUPPRESS)
+    parser.add_argument("--after-update", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--previous", default="", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     ww.setup_logging()
     if args.autostart:
         set_autostart(args.autostart == "on")
         return
-    if args.after_update:  # the old version is closing; wait for it before taking the single-instance lock
-        try:
-            ww.psutil.Process(args.after_update).wait(timeout=30)
-        except (ww.psutil.Error, ww.psutil.TimeoutExpired):
-            pass
-    if not ww.acquire_single_instance():
+    if args.after_update:  # the old version is closing; wait until it lets go of the single-instance lock
+        for _ in range(60):
+            if ww.acquire_single_instance():
+                break
+            time.sleep(0.5)
+    if not ww._instance and not ww.acquire_single_instance():
         handle = kernel32.OpenEventW(0x0002, False, SHOW_EVENT)  # EVENT_MODIFY_STATE
         if handle:
             kernel32.SetEvent(handle)
         return
     logging.info("%s %s started (%s)", ww.APP_NAME, ww.__version__, launch_command())
-    if getattr(sys, "frozen", False):
+    if args.after_update:  # tell the old version that this one runs
+        handle = kernel32.OpenEventW(0x0002, False, UPDATED_EVENT)
+        if handle:
+            kernel32.SetEvent(handle)
+            kernel32.CloseHandle(handle)
+    elif getattr(sys, "frozen", False):
         ww.remove_old_exe(sys.executable)
     migrate_legacy_autostart()
     refresh_autostart()

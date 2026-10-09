@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-10-09
+
+### Fixed
+- After a self-update the new version starts properly. It used to inherit the old process's PyInstaller variables, look for its files in the old temporary folder and fail with "Cannot find Microsoft.Web.WebView2.Core.dll".
+- A freshly downloaded exe sometimes fails to unpack on its first start. The old version now waits until the new one reports that it runs, tries up to 3 times, and otherwise puts the old exe back and starts it.
+
 ## [0.14.0] - 2026-10-09
 
 ### Added
