@@ -29,7 +29,7 @@ const I18N = {
     sensitivity: "Чувствителност", sensHelp: "По-висока стойност дава по-малко фалшиви задействания, но трябва да говорите по-ясно.",
     minConf: "Минимална увереност", cooldown: "Пауза след задействане", decoys: "Близки думи ({n})", decoysHelp: "Думи, които звучат подобно и поемат почти-попаденията, за да не се задейства Hark.",
     add: "+ Добави", newWord: "нова дума", remove: "Премахни {w}",
-    aboutTitle: "За приложението", aboutText: "Hark слуша на вашия компютър за ключова дума и управлява Codex Desktop с глас: отваря гласов чат и диктува. Разпознаването е локално, аудиото не се записва и не излиза навън.", aboutAuthor: "Автор: Иван Йосифов",
+    aboutTitle: "За приложението", aboutText: "Hark слуша на вашия компютър за ключова дума и управлява Codex Desktop с глас: отваря гласов чат и диктува. Разпознаването е локално, аудиото не се записва и не излиза навън.", aboutAuthor: "Автор: Иван Йосифов", aboutDonate: "Подкрепете проекта:",
     aboutLegal: "Лиценз MIT. Неофициален проект, не е свързан с OpenAI; „Codex“ е име на продукт на OpenAI.",
     keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери", updTitle: "Нови версии", updHelp: "Проверява публичното репо в GitHub след стартиране и на всеки 12 часа.", updCheck: "Провери сега", updAuto: "Автоматична проверка", updGet: "Изтегли {v}", updChecking: "Проверява…",
     windowsTitle: "Windows", windowsHelp: "Стартиране, папка с данни и настройки по подразбиране.",
@@ -76,7 +76,7 @@ const I18N = {
     sensitivity: "Sensitivity", sensHelp: "A higher value means fewer false triggers, but you need to speak more clearly.",
     minConf: "Minimum confidence", cooldown: "Pause after a trigger", decoys: "Similar words ({n})", decoysHelp: "Words that sound alike and absorb near misses so Hark does not trigger.",
     add: "+ Add", newWord: "new word", remove: "Remove {w}",
-    aboutTitle: "About", aboutText: "Hark listens on your computer for a wake word and controls Codex Desktop by voice: it opens voice chat and dictates. Recognition is local; audio is never recorded or sent anywhere.", aboutAuthor: "Author: Ivan Yosifov",
+    aboutTitle: "About", aboutText: "Hark listens on your computer for a wake word and controls Codex Desktop by voice: it opens voice chat and dictates. Recognition is local; audio is never recorded or sent anywhere.", aboutAuthor: "Author: Ivan Yosifov", aboutDonate: "Support the project:",
     aboutLegal: "MIT License. Unofficial project, not affiliated with OpenAI; “Codex” is the name of an OpenAI product.",
     keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check", updTitle: "New versions", updHelp: "Checks the public GitHub repository after start and every 12 hours.", updCheck: "Check now", updAuto: "Automatic check", updGet: "Download {v}", updChecking: "Checking…",
     windowsTitle: "Windows", windowsHelp: "Start-up, data folder and default settings.",
@@ -147,8 +147,8 @@ function fixtureApi() {
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.12.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.12.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.13.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.13.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
@@ -344,7 +344,7 @@ const screens = {
   commands() {
     const lang = ui.wordsLang;
     const w = "languages." + lang + ".";
-    return '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + "</div><h1>" + L.cmdTitle + "</h1><small>" + L.cmdNote + "</small></div></div>" +
+    return saveBar() + '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + "</div><h1>" + L.cmdTitle + "</h1><small>" + L.cmdNote + "</small></div></div>" +
       '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + "</button>").join("") + "</div></div>" +
       '<div class="grid2"><section class="card"><div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + "</span><div><h2>" + L.chat + "</h2><small>" + T("chatSub", { voice: voiceKey() }) + "</small></div></div>" + toggle("chat_enabled", L.chatOn) + "</div>" +
       chips(w + "wake_words", L.wakeWords) + chatTarget() +
@@ -357,7 +357,7 @@ const screens = {
       chips(w + "send_words", L.sendWords) + chips(w + "draft_words", L.draftWords) + range("dictation_idle_seconds", L.dictEnd, 1, " s") + "</section></div>" +
       '<section class="card"><div><h2>' + L.sensitivity + "</h2><small>" + L.sensHelp + "</small></div>" +
       range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
-      "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>" + saveBar();
+      "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>";
   },
   mic() {
     const live = ui.live || { level: 0 };
@@ -366,14 +366,14 @@ const screens = {
     const calib = !c ? '<button class="btn btn-primary" data-action="calibrate">' + icon("mic") + L.calibrate + "</button><small>" + L.calibHelp + "</small>"
       : c.step === "done" ? '<div class="alert ' + (c.value ? "ok" : "warn") + '">' + icon(c.value ? "ok" : "warn") + esc(c.value ? T("suggested", { v: c.value }) : c.error || L.noDiff) + '</div><button class="text-button" data-action="calibrate">' + L.again + "</button>"
       : '<div class="alert">' + icon("info") + (c.step === "quiet" ? L.quiet : L.speak) + " " + c.left + " s</div>";
-    return '<div class="intro"><div><div class="eyebrow">' + L.micEyebrow + "</div><h1>" + L.micTitle + "</h1><small>" + L.micNote + "</small></div></div>" +
+    return saveBar() + '<div class="intro"><div><div class="eyebrow">' + L.micEyebrow + "</div><h1>" + L.micTitle + "</h1><small>" + L.micNote + "</small></div></div>" +
       '<section class="card"><div class="field"><label for="device">' + L.microphone + '</label><select id="device" data-key="mic_device"><option value="">' + L.winDefault + "</option>" +
       devices.map((d) => '<option value="' + esc(d) + '"' + (d === ui.draft.mic_device ? " selected" : "") + ">" + esc(d) + "</option>").join("") +
       (ui.draft.mic_device && !devices.includes(ui.draft.mic_device) ? '<option selected value="' + esc(ui.draft.mic_device) + '">' + esc(ui.draft.mic_device) + " " + L.notConnected + "</option>" : "") +
       "</select>" + err("mic_device") + "</div>" +
       '<div class="field"><div class="lab"><span class="label">' + L.levelNow + '</span><output id="level-out">' + live.level + '</output></div><div class="meter big" aria-hidden="true"><i id="level-bar" style="width:' + meterWidth(live.level) + '%"></i><b id="thr-mark" style="left:' + meterWidth(ui.draft.speech_rms) + '%"></b></div></div>' +
       range("speech_rms", L.speechRms, 10, "") + '<div class="steps">' + calib + "</div></section>" +
-      '<section class="card"><div><h2>' + L.codexVoice + "</h2><small>" + L.codexVoiceHelp + "</small></div>" + range("codex_audio_peak", L.codexPeak, 0.001, "") + "</section>" + saveBar();
+      '<section class="card"><div><h2>' + L.codexVoice + "</h2><small>" + L.codexVoiceHelp + "</small></div>" + range("codex_audio_peak", L.codexPeak, 0.001, "") + "</section>";
   },
   activity() {
     const kinds = FILTERS[ui.filter];
@@ -390,7 +390,7 @@ const screens = {
   },
   settings() {
     const m = ui.meta;
-    return '<div class="intro"><div><div class="eyebrow">' + L.setEyebrow + "</div><h1>" + L.setTitle + "</h1><small>" + L.setNote + "</small></div></div>" +
+    return (dirty() ? saveBar() : "") + '<div class="intro"><div><div class="eyebrow">' + L.setEyebrow + "</div><h1>" + L.setTitle + "</h1><small>" + L.setNote + "</small></div></div>" +
       '<section class="card" style="gap:0">' +
       '<div class="set"><div><strong>' + L.language + "</strong></div>" + seg("language", [["en", L.languages[1]], ["bg", L.languages[0]], ["auto", L.languages[2]]]) + "</div>" +
       '<div class="set"><div><strong>' + L.notifications + "</strong><small>" + L.notificationsHelp + "</small></div>" + toggle("notifications", L.notifications) + "</div>" +
@@ -401,14 +401,14 @@ const screens = {
       '<section class="card" style="gap:0"><div><h2>' + L.windowsTitle + "</h2><small>" + L.windowsHelp + "</small></div>" +
       '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
       '<div class="steps" style="padding-top:10px">' + '<button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
-      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>" +
-      (dirty() ? saveBar() : "");
+      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>";
   },
   about() {
     const m = ui.meta;
     return '<div class="intro"><div><div class="eyebrow">' + L.aboutTitle + "</div><h1>" + L.title + "</h1></div></div>" +
       '<section class="card"><div class="head-title"><img class="app-icon" src="icon.png" alt=""><div><h2>' + L.title + " " + esc(m.version) + "</h2><small>" + L.aboutText + "</small></div></div>" +
-      '<div class="links"><span>' + L.aboutAuthor + '</span><a class="link" href="https://ivanyosifov.com" data-url="https://ivanyosifov.com">IvanYosifov.com</a><a class="link" href="https://github.com/ID-Yo/codex-hark" data-url="https://github.com/ID-Yo/codex-hark">GitHub</a></div><small>' + L.aboutLegal + "</small>" +
+      '<div class="links"><span>' + L.aboutAuthor + '</span><a class="link" href="https://ivanyosifov.com" data-url="https://ivanyosifov.com">IvanYosifov.com</a><a class="link" href="https://github.com/ID-Yo/codex-hark" data-url="https://github.com/ID-Yo/codex-hark">GitHub</a></div>' +
+      '<div class="links"><span>' + L.aboutDonate + '</span><a class="link" href="https://buymeacoffee.com/ivan.yosifov" data-url="https://buymeacoffee.com/ivan.yosifov">Buy Me a Coffee</a><a class="link" href="https://paypal.me/IvanYosifov" data-url="https://paypal.me/IvanYosifov">PayPal</a></div><small>' + L.aboutLegal + "</small>" +
       '<div class="alert">' + icon("info") + L.localModel + "</div></section>";
   },
 };
