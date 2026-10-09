@@ -22,6 +22,7 @@ import sqlite3
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 import winreg
 import zipfile
@@ -50,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -139,6 +140,9 @@ DEFAULTS = {
     "stop_enabled": True,
     "idle_close": True,  # end a voice chat after idle_seconds of silence (never while Codex is working)
     "chat_enabled": True,
+    "chat_target": "new",  # where a voice chat goes: a "new" chat each time, one Codex "thread" or one "project"
+    "chat_thread": "",  # the Codex thread id for "thread"
+    "chat_project": "",  # the project folder for "project"
     "dictation_enabled": True,
     "min_conf": 0.5,
     "idle_seconds": 10,  # end the voice chat after this much silence from you and Codex
@@ -160,6 +164,7 @@ WORD_LISTS = ("wake_words", "send_words", "draft_words", "stop_words", "decoys")
 COMMAND_LISTS = WORD_LISTS[:4]  # a word may appear in only one of these per language
 OLD_WORD_KEYS = ("wake_words", "dictate_words", "stop_words", "decoys", "dictation_send")
 THEMES = ("system", "light", "dark")
+CHAT_TARGETS = ("new", "thread", "project")
 MAX_PHRASE_WORDS = 3  # a wake phrase such as "hey jarvis"; the other lists hold single words
 LANGUAGES = ("auto", "bg", "en")
 # Environment variables keep working and win over settings.json.
@@ -254,6 +259,7 @@ DICTATE_BUTTON = "Dictate"
 STOP_DICTATION_BUTTON = "Stop dictation"  # present while dictation is running; inserts the text
 SEND_DICTATION_BUTTON = "Transcribe and send"  # ends dictation and sends the text to the agent
 MIC_RETRY_S = 10
+TARGET_WAIT_S = 1.5  # time Codex gets to open the chosen chat before the voice chat key
 CHAT_WAIT_S = 1.0  # a bare wake word waits this long in case another language heard a full command
 BUSY_MAX_S = 300  # after this long the silence rule applies again, in case a turn never finishes
 
@@ -354,7 +360,9 @@ def validate_settings(raw, known_word=None, lang="bg"):
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not lo <= value <= hi:
                 errors[key] = msg("range", lo=lo, hi=hi)
                 continue
-        elif (key == "theme" and value not in THEMES) or (key == "language" and value not in LANGUAGES):
+        elif ((key == "theme" and value not in THEMES) or (key == "language" and value not in LANGUAGES)
+              or (key == "chat_target" and value not in CHAT_TARGETS)
+              or (key == "chat_thread" and value and not THREAD_ID.fullmatch(str(value)))):
             errors[key] = msg("choice")
             continue
         elif type(value) is not type(default):
@@ -709,6 +717,69 @@ def codex_history_db():
     return max(found, key=os.path.getmtime) if found else None
 
 
+def codex_state_db():
+    """Codex Desktop's thread and project list (state_<n>.sqlite in CODEX_HOME)."""
+    home = os.environ.get("CODEX_HOME") or os.path.join(os.path.expanduser("~"), ".codex")
+    found = glob.glob(os.path.join(home, "state_*.sqlite"))
+    return max(found, key=os.path.getmtime) if found else None
+
+
+THREAD_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+THREADS_SQL = """
+select id, coalesce(nullif(name, ''), title), cwd from threads
+where archived = 0 and source not like '%subagent%' and coalesce(nullif(name, ''), title, '') != ''
+order by coalesce(recency_at_ms, updated_at_ms) desc limit 40
+"""
+PROJECTS_SQL = """
+select p.name, r.path from projects p join project_roots r on r.project_id = p.id and r.position = 0
+order by p.position
+"""
+
+
+def codex_targets(db=None):
+    """Recent Codex chats and the projects, for choosing where voice chats go. Empty lists if unknown."""
+    db = db or codex_state_db()
+    out = {"threads": [], "projects": []}
+    if not db:
+        return out
+    clean = lambda path: (path or "").removeprefix("\\\\?\\")  # noqa: E731
+    try:
+        con = sqlite3.connect("file:" + db.replace("\\", "/") + "?mode=ro", uri=True, timeout=1)
+        try:
+            for tid, title, cwd in con.execute(THREADS_SQL):
+                title = " ".join(title.split())
+                out["threads"].append({"id": tid, "title": title[:60] + ("…" if len(title) > 60 else ""),
+                                       "folder": os.path.basename(clean(cwd))})
+            out["projects"] = [{"name": name, "path": clean(path)} for name, path in con.execute(PROJECTS_SQL)]
+        finally:
+            con.close()
+    except sqlite3.Error as e:
+        logging.warning("cannot read the Codex chats: %s", e)
+    return out
+
+
+def chat_target_url(settings):
+    """The codex:// link that opens the chat or project a voice chat should go to; None for a new chat."""
+    target = settings.get("chat_target", "new")
+    if target == "thread" and THREAD_ID.fullmatch(settings.get("chat_thread", "")):
+        return "codex://threads/" + settings["chat_thread"]
+    if target == "project" and settings.get("chat_project"):
+        return "codex://threads/new?path=" + urllib.parse.quote(settings["chat_project"], safe="")
+    return None
+
+
+def start_voice_chat(settings):
+    """Open the chosen chat or project in Codex first, then press the voice chat key."""
+    url = chat_target_url(settings)
+    if url:
+        try:
+            os.startfile(url)
+            time.sleep(TARGET_WAIT_S)
+        except OSError as e:
+            logging.warning("cannot open %s: %s", url, e)
+    press_voice_chat()
+
+
 # The newest voice chat session that has not closed, and whether its agent has an unfinished turn.
 BUSY_SQL = """
 select exists(select 1 from thread_turns t where t.thread_id = s.thread_id and t.status = 'inProgress')
@@ -994,7 +1065,7 @@ class Listener:
                     beep()
                 if not dictate:
                     ev.add("chat", "wake_chat", phrase=wake, conf=f"{conf:.2f}")
-                    press_voice_chat()
+                    start_voice_chat(s)
                 elif self._click(DICTATE_BUTTON):
                     ev.add("dictation", "wake_dictation" if send else "wake_draft",
                            phrase=f"{wake}, {following}", conf=f"{conf:.2f}")

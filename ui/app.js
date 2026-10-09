@@ -21,7 +21,9 @@ const I18N = {
     sendWords: "Пиши и изпрати", draftWords: "Чернова: текстът остава в полето", 
     recent: "Последни", events: "Събития", allLog: "Целият дневник →", noEvents: "Още няма събития.",
     cmdEyebrow: "Гласови команди", cmdTitle: "Какво чува и какво прави", cmdNote: "Промените действат веднага след „Запази“.",
-    chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", wakeWords: "Ключови думи", closeAfter: "Секунди тишина",
+    chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", chatGoes: "Разговорите отиват в", targets: ["Нов чат", "Един чат", "Един проект"], chatPick: "Избери чат", projectPick: "Избери проект", noTargets: "Codex още няма чатове или проекти.",
+    targetHelp: { new: "Всеки разговор е отделен чат.", thread: "Hark отваря този чат преди разговора, така че всички разговори се събират в него.", project: "Hark отваря нов чат в този проект. Проектът трябва да е доверен в Codex." },
+    wakeWords: "Ключови думи", closeAfter: "Секунди тишина",
     closeHelp: "Докато Codex търси или мисли, разговорът не се затваря (до 5 минути).", idleClose: "Затваряй след тишина", stopWords: "Фраза за край: ключова дума + една от тези думи", stopOn: "Фраза за край включена", busy: "Codex работи, разговорът остава отворен", chatStop: "„{w}, {s}“ го затваря веднага.", tryChat: "Пробвай: отвори гласов чат",
     dict: "Диктовка", dictSub: "Ключова дума + дума за диктовка", dictOn: "Диктовка включена", dictWords: "Думи за диктовка", dictEnd: "Край на диктовката след тишина",
     sensitivity: "Чувствителност", sensHelp: "По-висока стойност дава по-малко фалшиви задействания, но трябва да говорите по-ясно.",
@@ -66,7 +68,9 @@ const I18N = {
     sendWords: "Write and send", draftWords: "Draft: text stays in the box", 
     recent: "Recent", events: "Events", allLog: "Full activity →", noEvents: "No events yet.",
     cmdEyebrow: "Voice commands", cmdTitle: "What it hears and what it does", cmdNote: "Changes take effect as soon as you save.",
-    chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", wakeWords: "Wake words", closeAfter: "Seconds of silence",
+    chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", chatGoes: "Conversations go to", targets: ["New chat", "One chat", "One project"], chatPick: "Choose a chat", projectPick: "Choose a project", noTargets: "Codex has no chats or projects yet.",
+    targetHelp: { new: "Every conversation is a separate chat.", thread: "Hark opens this chat before the conversation, so all conversations collect in it.", project: "Hark opens a new chat in this project. The project must be trusted in Codex." },
+    wakeWords: "Wake words", closeAfter: "Seconds of silence",
     closeHelp: "While Codex is searching or thinking, the conversation stays open (up to 5 minutes).", idleClose: "Close after silence", stopWords: "Stop phrase: wake word + one of these words", stopOn: "Stop phrase on", busy: "Codex is working, the conversation stays open", chatStop: "“{w}, {s}” closes it at once.", tryChat: "Try it: open voice chat",
     dict: "Dictation", dictSub: "Wake word + dictation word", dictOn: "Dictation on", dictWords: "Dictation words", dictEnd: "End dictation after silence",
     sensitivity: "Sensitivity", sensHelp: "A higher value means fewer false triggers, but you need to speak more clearly.",
@@ -106,6 +110,7 @@ const stateText = (s) => (L.states[s] || L.states.starting);
 const FILTERS = { all: null, chat: ["chat"], dictation: ["dictation", "sent", "inserted"], error: ["error"] };
 
 const ui = {
+  targets: { threads: [], projects: [] },
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
@@ -133,6 +138,7 @@ function fixtureApi() {
     chat_enabled: true, dictation_enabled: true, min_conf: 0.5, idle_seconds: 10,
     dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
     mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
+    chat_target: "new", chat_thread: "", chat_project: "",
     languages: {
       en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
       bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
@@ -141,11 +147,12 @@ function fixtureApi() {
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.10.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.10.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.11.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.11.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
+    codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
     download_model: async () => [], suggest_threshold: async () => 290, open_folder: async () => true, copy: async () => true,
@@ -262,6 +269,19 @@ function chips(key, label) {
     (isWake(key) ? "<small>" + T("phraseHelp", { n: MAX_PHRASE }) + "</small>" : "") +
     (lost.length ? '<span class="error-text">' + esc(T("chipUnknown", { w: lost.join(", ") })) + "</span>" : "") + err(key) + "</div>";
 }
+function chatTarget() {
+  const t = ui.draft.chat_target, thread = t === "thread";
+  const key = thread ? "chat_thread" : "chat_project", cur = ui.draft[key], pick = thread ? L.chatPick : L.projectPick;
+  let select = "";
+  if (t !== "new") {
+    const list = thread ? ui.targets.threads : ui.targets.projects;
+    const opts = list.map((x) => { const v = thread ? x.id : x.path; return '<option value="' + esc(v) + '"' + (v === cur ? " selected" : "") + ">" + esc(thread ? x.title + (x.folder ? " · " + x.folder : "") : x.name + " · " + x.path) + "</option>"; });
+    if (cur && !list.some((x) => (thread ? x.id : x.path) === cur)) opts.unshift('<option selected value="' + esc(cur) + '">' + esc(cur) + "</option>");
+    select = list.length || cur ? '<select data-key="' + key + '" aria-label="' + pick + '">' + (cur ? "" : '<option value="" selected>' + pick + "</option>") + opts.join("") + "</select>" + err(key) : "<small>" + L.noTargets + "</small>";
+  }
+  return '<div class="field"><span class="label">' + L.chatGoes + "</span>" + seg("chat_target", [["new", L.targets[0]], ["thread", L.targets[1]], ["project", L.targets[2]]]) + select + "<small>" + L.targetHelp[t] + "</small></div>";
+}
+async function refreshTargets() { if (api.codex_targets) { ui.targets = await api.codex_targets(); if (ui.screen === "commands") render(); } }
 function toggle(key, label) {
   return '<label class="switch" title="' + label + '"><input type="checkbox" data-key="' + key + '" aria-label="' + label + '"' + (getP(ui.draft, key) ? " checked" : "") + "><span></span></label>";
 }
@@ -320,7 +340,7 @@ const screens = {
     return '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + "</div><h1>" + L.cmdTitle + "</h1><small>" + L.cmdNote + "</small></div></div>" +
       '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + "</button>").join("") + "</div></div>" +
       '<div class="grid2"><section class="card"><div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + "</span><div><h2>" + L.chat + "</h2><small>" + T("chatSub", { voice: voiceKey() }) + "</small></div></div>" + toggle("chat_enabled", L.chatOn) + "</div>" +
-      chips(w + "wake_words", L.wakeWords) +
+      chips(w + "wake_words", L.wakeWords) + chatTarget() +
       '<div class="set"><div><strong>' + L.idleClose + "</strong><small>" + L.closeHelp + "</small></div>" + toggle("idle_close", L.idleClose) + "</div>" +
       (ui.draft.idle_close ? range("idle_seconds", L.closeAfter, 1, " s") : "") +
       '<div class="set"><div><strong>' + L.stopWords + "</strong></div>" + toggle("stop_enabled", L.stopOn) + "</div>" +
@@ -490,7 +510,7 @@ document.addEventListener("click", async (ev) => {
   const t = ev.target.closest("button, [data-go]");
   if (!t) return;
   const d = t.dataset;
-  if (d.screen || d.go) { ui.screen = d.screen || d.go; ui.notice = null; ui.adding = null; render(true); if (ui.screen === "commands") refreshUnknown(); return; }
+  if (d.screen || d.go) { ui.screen = d.screen || d.go; ui.notice = null; ui.adding = null; render(true); if (ui.screen === "commands") { refreshUnknown(); refreshTargets(); } return; }
   if (d.seg) { const v = d.v === "true" ? true : d.v === "false" ? false : d.v; await setDraft(d.seg, v); render(); updateSaveBar(); return; }
   if (d.filter) { ui.filter = d.filter; render(); return; }
   if (d.remove) { setP(ui.draft, d.remove, getP(ui.draft, d.remove).filter((_, i) => i !== Number(d.i))); delete ui.errors[d.remove]; ui.notice = null; render(); return; }
@@ -575,6 +595,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme
   setLanguage(ui.meta.lang);
   ui.wordsLang = ui.draft.languages[ui.lang] ? ui.lang : "en";
   applyTheme();
+  ui.targets = api.codex_targets ? await api.codex_targets() : ui.targets;
   ui.live = await api.state(0);
   ui.events = ui.live.events.slice(-1000);
   ui.lastId = ui.events.length ? ui.events[ui.events.length - 1].id : 0;
