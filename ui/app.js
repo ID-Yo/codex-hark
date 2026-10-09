@@ -8,7 +8,7 @@ const icon = (id) => '<svg class="icon" aria-hidden="true"><use href="#' + id + 
 
 const I18N = {
   bg: {
-    title: "Codex Hark", product: "Hark", nav: ["Начало", "Гласови команди", "Микрофон", "Дневник", "Настройки", "Относно"],
+    title: "Codex Hark", product: "Hark", nav: ["Начало", "Гласови команди", "AI асистент", "Дневник", "Настройки", "Относно"],
     states: { starting: ["Стартира", "Hark стартира…"], listening: ["Слуша", "Слуша за ключовата дума"], chat: ["Гласов чат", "Гласовият чат е отворен"], dictation: ["Диктовка", "Диктовка в текущия чат"], paused: ["Пауза", "Слушането е на пауза"], error: ["Грешка", "Hark има проблем"] },
     kinds: { chat: "Гласов чат", dictation: "Диктовка", sent: "Изпратено", inserted: "В полето", error: "Грешка", pause: "Пауза", settings: "Настройки" },
     stateEyebrow: "Състояние", ready: "Готов за „{w}“", onPause: "На пауза", localNote: "Hark работи локално. Аудиото не се записва и не излиза от компютъра.",
@@ -21,7 +21,7 @@ const I18N = {
     sendWords: "Пиши и изпрати", draftWords: "Чернова: текстът остава в полето", 
     recent: "Последни", events: "Събития", allLog: "Целият дневник →", noEvents: "Още няма събития.",
     cmdEyebrow: "Гласови команди", cmdTitle: "Какво чува и какво прави", cmdNote: "Промените действат веднага след „Запази“.",
-    chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", chatGoes: "Разговорите отиват в", asst: "Създай личен асистент", asstHelp: "Прави папка „Hark Assistant“ в Документи с AGENTS.md и memory.md, добавя я като проект в Codex и праща гласовите разговори там. Асистентът помни между разговорите в memory.md.", asstWorking: "Създава папката и проекта…", asstReady: "Готово: разговорите отиват в {f}", asstNoProject: "Папката {f} е готова и разговорите отиват там, но Codex още не я показва като проект.", targets: ["Нов чат", "Един чат", "Един проект"], chatPick: "Избери чат", projectPick: "Избери проект", noTargets: "Codex още няма чатове или проекти.",
+    chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", chatGoes: "Разговорите отиват в", asstEyebrow: "AI асистент", asstTitle: "Личен асистент с памет", asstNote: "Асистентът живее в своя папка-проект в Codex. Чете SOUL.md и MEMORY.md в началото на всеки разговор и записва важното в MEMORY.md.", asstOn: "Включи асистента", asstOnHelp: "Прави папка „Hark Assistant“ в Документи с AGENTS.md, SOUL.md и MEMORY.md, добавя я като проект в Codex и праща гласовите разговори там. Codex може веднъж да попита дали вярвате на папката.", asstWorking: "Създава папката и проекта…", asstReady: "Готово: разговорите отиват в {f}", asstNoProject: "Папката {f} е готова и разговорите отиват там, но Codex още не я показва като проект.", asstName: "Име", asstModel: "Модел", asstModelDefault: "По подразбиране в Codex", asstModelHelp: "Записва се в .codex/config.toml на папката. Гласовата част на Codex ползва свой модел; този е за агента, който върши работата.", asstContinue: "Продължи последния чат, ако е бил преди по-малко от", asstContinueHelp: "0 = всеки разговор е нов чат. Иначе гласовият разговор продължава в последния чат на асистента, ако е бил използван в този срок.", asstFolder: "Папка", asstChoose: "Избери…", asstMove: "Премести…", asstMoveHelp: "В новата папка се създават липсващите файлове, а старата остава както е.", asstOpen: "Отвори папката", asstProject: "Проект в Codex", asstProjectNo: "още не е проект", asstElsewhere: "Гласовите разговори сега отиват другаде.", asstSendHere: "Прати разговорите тук", asstFiles: "Файлове", asstSaveFile: "Запази файла", asstReload: "Презареди", asstFileSaved: "{f} е записан.", asstFileUnsaved: "Има незаписани промени в {f}.", targets: ["Нов чат", "Един чат", "Един проект"], chatPick: "Избери чат", projectPick: "Избери проект", noTargets: "Codex още няма чатове или проекти.",
     targetHelp: { new: "Всеки разговор е отделен чат.", thread: "Hark отваря този чат преди разговора, така че всички разговори се събират в него.", project: "Hark отваря нов чат в този проект. Проектът трябва да е доверен в Codex." },
     wakeWords: "Ключови думи", closeAfter: "Секунди тишина",
     closeHelp: "Докато Codex търси или мисли, разговорът не се затваря (до 5 минути).", idleClose: "Затваряй след тишина", stopWords: "Фраза за край: ключова дума + една от тези думи", stopOn: "Фраза за край включена", busy: "Codex работи, разговорът остава отворен", chatStop: "„{w}, {s}“ го затваря веднага.", tryChat: "Пробвай: отвори гласов чат",
@@ -55,7 +55,7 @@ const I18N = {
     footer: "{s} · Codex {c} · {voice}", footerOpen: "е отворен", footerClosed: "не е отворен", version: "Codex Hark v{v}",
   },
   en: {
-    title: "Codex Hark", product: "Hark", nav: ["Home", "Voice commands", "Microphone", "Activity", "Settings", "About"],
+    title: "Codex Hark", product: "Hark", nav: ["Home", "Voice commands", "AI Assistant", "Activity", "Settings", "About"],
     states: { starting: ["Starting", "Hark is starting…"], listening: ["Listening", "Listening for the wake word"], chat: ["Voice chat", "Voice chat is open"], dictation: ["Dictation", "Dictating in the current chat"], paused: ["Paused", "Listening is paused"], error: ["Error", "Hark has a problem"] },
     kinds: { chat: "Voice chat", dictation: "Dictation", sent: "Sent", inserted: "In the box", error: "Error", pause: "Pause", settings: "Settings" },
     stateEyebrow: "Status", ready: "Ready for “{w}”", onPause: "Paused", localNote: "Hark runs on this computer. Audio is never recorded or sent anywhere.",
@@ -68,7 +68,7 @@ const I18N = {
     sendWords: "Write and send", draftWords: "Draft: text stays in the box", 
     recent: "Recent", events: "Events", allLog: "Full activity →", noEvents: "No events yet.",
     cmdEyebrow: "Voice commands", cmdTitle: "What it hears and what it does", cmdNote: "Changes take effect as soon as you save.",
-    chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", chatGoes: "Conversations go to", asst: "Create a personal assistant", asstHelp: "Makes a “Hark Assistant” folder in Documents with AGENTS.md and memory.md, adds it to Codex as a project and sends voice chats there. The assistant remembers between conversations in memory.md.", asstWorking: "Creating the folder and project…", asstReady: "Done: conversations go to {f}", asstNoProject: "The folder {f} is ready and conversations go there, but Codex does not list it as a project yet.", targets: ["New chat", "One chat", "One project"], chatPick: "Choose a chat", projectPick: "Choose a project", noTargets: "Codex has no chats or projects yet.",
+    chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", chatGoes: "Conversations go to", asstEyebrow: "AI Assistant", asstTitle: "A personal assistant with memory", asstNote: "The assistant lives in its own project folder in Codex. It reads SOUL.md and MEMORY.md at the start of every conversation and notes what matters in MEMORY.md.", asstOn: "Turn the assistant on", asstOnHelp: "Makes a “Hark Assistant” folder in Documents with AGENTS.md, SOUL.md and MEMORY.md, adds it to Codex as a project and sends voice chats there. Codex may ask once whether you trust the folder.", asstWorking: "Creating the folder and project…", asstReady: "Done: conversations go to {f}", asstNoProject: "The folder {f} is ready and conversations go there, but Codex does not list it as a project yet.", asstName: "Name", asstModel: "Model", asstModelDefault: "Codex default", asstModelHelp: "Saved in the folder’s .codex/config.toml. The voice part of Codex uses its own model; this one is for the agent that does the work.", asstContinue: "Continue the last chat if it was less than", asstContinueHelp: "0 = every conversation is a new chat. Otherwise the voice chat continues in the assistant’s last chat if it was used within this time.", asstFolder: "Folder", asstChoose: "Choose…", asstMove: "Move…", asstMoveHelp: "Missing files are created in the new folder; the old one is left as it is.", asstOpen: "Open folder", asstProject: "Project in Codex", asstProjectNo: "not a project yet", asstElsewhere: "Voice chats go somewhere else right now.", asstSendHere: "Send conversations here", asstFiles: "Files", asstSaveFile: "Save file", asstReload: "Reload", asstFileSaved: "{f} is saved.", asstFileUnsaved: "{f} has unsaved changes.", targets: ["New chat", "One chat", "One project"], chatPick: "Choose a chat", projectPick: "Choose a project", noTargets: "Codex has no chats or projects yet.",
     targetHelp: { new: "Every conversation is a separate chat.", thread: "Hark opens this chat before the conversation, so all conversations collect in it.", project: "Hark opens a new chat in this project. The project must be trusted in Codex." },
     wakeWords: "Wake words", closeAfter: "Seconds of silence",
     closeHelp: "While Codex is searching or thinking, the conversation stays open (up to 5 minutes).", idleClose: "Close after silence", stopWords: "Stop phrase: wake word + one of these words", stopOn: "Stop phrase on", busy: "Codex is working, the conversation stays open", chatStop: "“{w}, {s}” closes it at once.", tryChat: "Try it: open voice chat",
@@ -111,6 +111,7 @@ const FILTERS = { all: null, chat: ["chat"], dictation: ["dictation", "sent", "i
 
 const ui = {
   targets: { threads: [], projects: [] },
+  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "",
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
@@ -138,22 +139,27 @@ function fixtureApi() {
     chat_enabled: true, dictation_enabled: true, min_conf: 0.5, idle_seconds: 10,
     dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
     mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
-    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true,
+    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true, assistant_folder: "", assistant_name: "Hark", assistant_model: "", chat_continue_minutes: 0,
     languages: {
       en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
       bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
     },
   };
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
-  const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
+  let asstReady = false, asstFolder = "D:\\Users\\User\\Documents\\Hark Assistant";
+  const asstFiles = { "AGENTS.md": "# Personal assistant\n\nRead SOUL.md and MEMORY.md first.\n", "SOUL.md": "# Soul\n\nYour name is Hark.\n", "MEMORY.md": "# Memory\n\n## About the user\n" };
+  const limits = { chat_continue_minutes: [0, 240], min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.15.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.15.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.16.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.16.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
-    create_assistant: async () => ({ ok: true, folder: "D:\\Users\\User\\Documents\\Hark Assistant", project: true, trusted: true, settings: { ...settings, chat_target: "project", chat_project: "D:\\Users\\User\\Documents\\Hark Assistant" } }),
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.15.0 — you have 0.14.0", version: "0.15.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.15.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
+    choose_folder: async () => "E:\\Assistants\\Hark",
+    create_assistant: async (f) => { const folder = f || asstFolder; asstFolder = folder; settings = { ...settings, chat_target: "project", chat_project: folder, assistant_folder: folder, chat_continue_minutes: settings.chat_continue_minutes || 30 }; asstReady = true; return { ok: true, folder: settings.assistant_folder, project: true, settings }; },
+    assistant_info: async () => ({ folder: asstFolder, ready: asstReady, project: asstReady, models: [{ slug: "gpt-6-astra", name: "GPT-6-Astra" }, { slug: "gpt-6.1-sol", name: "GPT-6.1-Sol" }], files: asstReady ? { ...asstFiles } : {} }),
+    save_assistant_file: async (f, t) => { asstFiles[f] = t; return { ok: true }; }, open_assistant_folder: async () => true,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.17.0 — you have 0.16.0", version: "0.17.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.17.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -281,10 +287,9 @@ function chatTarget() {
     if (cur && !list.some((x) => (thread ? x.id : x.path) === cur)) opts.unshift('<option selected value="' + esc(cur) + '">' + esc(cur) + "</option>");
     select = list.length || cur ? '<select data-key="' + key + '" aria-label="' + pick + '">' + (cur ? "" : '<option value="" selected>' + pick + "</option>") + opts.join("") + "</select>" + err(key) : "<small>" + L.noTargets + "</small>";
   }
-  const a = ui.asst;
-  const asst = '<div class="field"><button class="btn btn-small" style="align-self:flex-start" data-action="assistant"' + (a === "working" ? " disabled" : "") + ">" + icon("folder") + L.asst + "</button><small" + (a && a.err ? ' class="error-text"' : "") + ">" + esc(a === "working" ? L.asstWorking : a ? a.text : L.asstHelp) + "</small></div>";
-  return '<div class="field"><span class="label">' + L.chatGoes + "</span>" + seg("chat_target", [["new", L.targets[0]], ["thread", L.targets[1]], ["project", L.targets[2]]]) + select + "<small>" + L.targetHelp[t] + "</small></div>" + asst;
+  return '<div class="field"><span class="label">' + L.chatGoes + "</span>" + seg("chat_target", [["new", L.targets[0]], ["thread", L.targets[1]], ["project", L.targets[2]]]) + select + "<small>" + L.targetHelp[t] + "</small></div>";
 }
+async function loadAssistant() { if (!api.assistant_info) return; ui.asstInfo = await api.assistant_info(); ui.asstInfo.filesOrder = ["AGENTS.md", "SOUL.md", "MEMORY.md"]; if (ui.screen === "assistant") render(); }
 async function refreshTargets() { if (api.codex_targets) { ui.targets = await api.codex_targets(); if (ui.screen === "commands") render(); } }
 function updatesRow() {
   const u = ui.update;
@@ -363,15 +368,14 @@ const screens = {
       range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
       "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>";
   },
-  mic() {
+  micCards() {
     const live = ui.live || { level: 0 };
     const devices = ui.meta.devices;
     const c = ui.calib;
     const calib = !c ? '<button class="btn btn-primary" data-action="calibrate">' + icon("mic") + L.calibrate + "</button><small>" + L.calibHelp + "</small>"
       : c.step === "done" ? '<div class="alert ' + (c.value ? "ok" : "warn") + '">' + icon(c.value ? "ok" : "warn") + esc(c.value ? T("suggested", { v: c.value }) : c.error || L.noDiff) + '</div><button class="text-button" data-action="calibrate">' + L.again + "</button>"
       : '<div class="alert">' + icon("info") + (c.step === "quiet" ? L.quiet : L.speak) + " " + c.left + " s</div>";
-    return saveBar() + '<div class="intro"><div><div class="eyebrow">' + L.micEyebrow + "</div><h1>" + L.micTitle + "</h1><small>" + L.micNote + "</small></div></div>" +
-      '<section class="card"><div class="field"><label for="device">' + L.microphone + '</label><select id="device" data-key="mic_device"><option value="">' + L.winDefault + "</option>" +
+    return '<section class="card"><div><h2>' + L.micEyebrow + ": " + L.micTitle + "</h2><small>" + L.micNote + "</small></div>" + '<div class="field"><label for="device">' + L.microphone + '</label><select id="device" data-key="mic_device"><option value="">' + L.winDefault + "</option>" +
       devices.map((d) => '<option value="' + esc(d) + '"' + (d === ui.draft.mic_device ? " selected" : "") + ">" + esc(d) + "</option>").join("") +
       (ui.draft.mic_device && !devices.includes(ui.draft.mic_device) ? '<option selected value="' + esc(ui.draft.mic_device) + '">' + esc(ui.draft.mic_device) + " " + L.notConnected + "</option>" : "") +
       "</select>" + err("mic_device") + "</div>" +
@@ -405,7 +409,35 @@ const screens = {
       '<section class="card" style="gap:0"><div><h2>' + L.windowsTitle + "</h2><small>" + L.windowsHelp + "</small></div>" +
       '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
       '<div class="steps" style="padding-top:10px">' + '<button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
-      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>";
+      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>" + screens.micCards();
+  },
+  assistant() {
+    const info = ui.asstInfo, d = ui.draft, a = ui.asst;
+    const head = '<div class="intro"><div><div class="eyebrow">' + L.asstEyebrow + "</div><h1>" + esc(d.assistant_name || L.asstTitle) + "</h1><small>" + L.asstNote + "</small></div></div>";
+    const status = a === "working" ? L.asstWorking : a ? a.text : "";
+    if (!info || !info.ready) {
+      return head + '<section class="card"><div><h2>' + L.asstTitle + "</h2><small>" + L.asstOnHelp + "</small></div>" +
+        '<div class="field"><label for="asst-name">' + L.asstName + '</label><input id="asst-name" class="text-input" data-text="assistant_name" maxlength="40" value="' + esc(d.assistant_name) + '"></div>' +
+        '<div class="set"><div><strong>' + L.asstFolder + '</strong><small id="asst-folder">' + esc(ui.asstPick || info?.folder || "") + '</small></div><button class="btn btn-small" data-action="choose-folder">' + icon("folder") + L.asstChoose + "</button></div>" +
+        '<button class="btn btn-primary" style="align-self:flex-start" data-action="assistant"' + (a === "working" ? " disabled" : "") + ">" + icon("spark") + L.asstOn + "</button>" +
+        (status ? "<small" + (a.err ? ' class="error-text"' : "") + ">" + esc(status) + "</small>" : "") + "</section>";
+    }
+    const here = d.chat_target === "project" && d.chat_project === info.folder;
+    const models = [["", L.asstModelDefault]].concat(info.models.map((m) => [m.slug, m.name]));
+    if (d.assistant_model && !info.models.some((m) => m.slug === d.assistant_model)) models.push([d.assistant_model, d.assistant_model]);
+    const file = ui.asstFile, text = ui.asstEdits[file] ?? info.files[file] ?? "";
+    const changed = ui.asstEdits[file] != null && ui.asstEdits[file] !== info.files[file];
+    return saveBar() + head +
+      '<div class="grid2"><section class="card"><div class="field"><label for="asst-name">' + L.asstName + '</label><input id="asst-name" class="text-input" data-text="assistant_name" maxlength="40" value="' + esc(d.assistant_name) + '"></div>' +
+      '<div class="field"><label for="asst-model">' + L.asstModel + '</label><select id="asst-model" data-key="assistant_model">' + models.map(([v, n]) => '<option value="' + esc(v) + '"' + (v === (d.assistant_model || "") ? " selected" : "") + ">" + esc(n) + "</option>").join("") + "</select><small>" + L.asstModelHelp + "</small></div>" +
+      range("chat_continue_minutes", L.asstContinue, 5, " min", L.asstContinueHelp) + "</section>" +
+      '<section class="card" style="gap:0"><div class="set"><div><strong>' + L.asstFolder + "</strong><small>" + esc(info.folder) + '</small></div><div class="steps"><button class="btn btn-small" data-action="open-asst-folder">' + icon("folder") + L.asstOpen + '</button><button class="btn btn-small" data-action="move-folder" title="' + L.asstMoveHelp + '">' + L.asstMove + "</button></div></div>" +
+      '<div class="set"><div><strong>' + L.asstProject + "</strong><small>" + (info.project ? esc(info.folder.split("\\").pop()) : L.asstProjectNo) + "</small></div></div>" +
+      (here ? "" : '<div class="set"><div><strong class="error-text">' + L.asstElsewhere + '</strong></div><button class="btn btn-small btn-primary" data-action="assistant">' + L.asstSendHere + "</button></div>") +
+      (status ? "<small" + (a.err ? ' class="error-text"' : "") + ">" + esc(status) + "</small>" : "") + "</section></div>" +
+      '<section class="card"><div class="head"><h2>' + L.asstFiles + '</h2><div class="seg" role="group">' + info.filesOrder.map((f) => '<button data-asst-file="' + f + '" aria-pressed="' + (f === file) + '">' + f + "</button>").join("") + "</div></div>" +
+      '<textarea id="asst-text" class="file-editor" spellcheck="false" aria-label="' + file + '">' + esc(text) + "</textarea>" +
+      '<div class="steps"><button class="btn btn-small btn-primary" data-action="save-file"' + (changed ? "" : " disabled") + ">" + icon("ok") + L.asstSaveFile + '</button><button class="btn btn-small" data-action="reload-files">' + L.asstReload + "</button><small>" + esc(ui.asstNote || (changed ? T("asstFileUnsaved", { f: file }) : "")) + "</small></div></section>";
   },
   about() {
     const m = ui.meta;
@@ -483,7 +515,7 @@ async function save(next = ui.draft) {
   ui.errors = {};
   ui.notice = ["ok", L.saved];
   applyTheme(); render(); refreshUnknown();
-  setTimeout(() => { ui.notice = null; if (!dirty() && ["commands", "mic", "settings"].includes(ui.screen)) render(); }, 3000);
+  setTimeout(() => { ui.notice = null; if (!dirty() && ["commands", "assistant", "settings"].includes(ui.screen)) render(); }, 3000);
   return true;
 }
 // Unsaved edits on other screens survive an immediate save from the Settings screen.
@@ -499,7 +531,7 @@ async function setDraft(key, value) {
 async function calibrate() {
   const run = async (step) => {
     ui.calib = { step, left: 5 }; render();
-    const timer = setInterval(() => { if (ui.calib && ui.calib.left > 1) { ui.calib.left--; if (ui.screen === "mic") render(); } }, 1000);
+    const timer = setInterval(() => { if (ui.calib && ui.calib.left > 1) { ui.calib.left--; if (ui.screen === "settings") render(); } }, 1000);
     const r = await api.measure(5);
     clearInterval(timer);
     return r;
@@ -522,8 +554,10 @@ document.addEventListener("click", async (ev) => {
   if (!t) return;
   const d = t.dataset;
   if (d.screen || d.go) { ui.screen = d.screen || d.go; ui.notice = null; ui.adding = null; render(true); if (ui.screen === "commands") { refreshUnknown(); refreshTargets(); }
+    if (ui.screen === "assistant") loadAssistant();
     if (ui.screen === "settings" && api.last_update && !ui.updChecking) api.last_update().then((u) => { if (u && ui.screen === "settings") { ui.update = u; render(); } });
     return; }
+  if (d.asstFile) { ui.asstFile = d.asstFile; ui.asstNote = ""; render(); return; }
   if (d.seg) { const v = d.v === "true" ? true : d.v === "false" ? false : d.v; await setDraft(d.seg, v); render(); updateSaveBar(); return; }
   if (d.filter) { ui.filter = d.filter; render(); return; }
   if (d.remove) { setP(ui.draft, d.remove, getP(ui.draft, d.remove).filter((_, i) => i !== Number(d.i))); delete ui.errors[d.remove]; ui.notice = null; render(); return; }
@@ -548,12 +582,23 @@ document.addEventListener("click", async (ev) => {
       if (!r.ok) { ui.installing = false; ui.installError = r.text; render(); }
       break;
     }
+    case "save-file": {
+      const f = ui.asstFile, r = await api.save_assistant_file(f, ui.asstEdits[f]);
+      if (r.ok) { ui.asstInfo.files[f] = ui.asstEdits[f]; delete ui.asstEdits[f]; ui.asstNote = T("asstFileSaved", { f }); } else ui.asstNote = r.text;
+      render(); break;
+    }
+    case "reload-files": ui.asstEdits = {}; ui.asstNote = ""; await loadAssistant(); break;
+    case "open-asst-folder": await api.open_assistant_folder(); break;
+    case "choose-folder": { const f = await api.choose_folder(ui.asstPick || ui.asstInfo?.folder || ""); if (f) { ui.asstPick = f; render(); } break; }
+    case "move-folder": { const f = await api.choose_folder(ui.asstInfo?.folder || ""); if (!f || f === ui.asstInfo?.folder) break; ui.asstPick = f; }
+    // falls through: turn the assistant on in the chosen folder
     case "assistant": {
       ui.asst = "working"; render();
-      const r = await api.create_assistant();
+      const r = await api.create_assistant(ui.asstPick || null); ui.asstPick = "";
       if (r.ok) {
-        ui.saved = clone(r.settings); ui.draft.chat_target = r.settings.chat_target; ui.draft.chat_project = r.settings.chat_project;
-        await refreshTargets();
+        ui.saved = clone(r.settings);
+        for (const k of ["chat_target", "chat_project", "assistant_folder", "chat_continue_minutes"]) ui.draft[k] = r.settings[k];
+        await refreshTargets(); await loadAssistant();
         ui.asst = { text: T(r.project ? "asstReady" : "asstNoProject", { f: r.folder }) };
       } else ui.asst = { err: true, text: r.text };
       render(); updateSaveBar(); break;
@@ -585,6 +630,8 @@ document.addEventListener("click", async (ev) => {
 document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.id === "query") { ui.query = t.value; render(); return; }
+  if (t.dataset?.text) { ui.draft[t.dataset.text] = t.value.slice(0, 40); ui.notice = null; updateSaveBar(); return; }
+  if (t.id === "asst-text") { ui.asstEdits[ui.asstFile] = t.value; ui.asstNote = ""; const b = $("[data-action=save-file]"); if (b) b.disabled = ui.asstEdits[ui.asstFile] === ui.asstInfo.files[ui.asstFile]; return; }
   if (t.dataset?.add) { scheduleCheck(t.dataset.add, t.value); return; }
   if (t.type === "range") {
     const key = t.dataset.key, v = Number(t.value);

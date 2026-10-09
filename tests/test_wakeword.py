@@ -272,22 +272,57 @@ class SelfUpdateTests(unittest.TestCase):
 
 
 class AssistantTests(unittest.TestCase):
-    def test_creates_the_files_once_and_trusts_the_folder_once(self):
+    def test_creates_the_three_files_once(self):
         with tempfile.TemporaryDirectory() as d:
-            folder, config = os.path.join(d, "Hark Assistant"), os.path.join(d, "codex", "config.toml")
-            os.makedirs(os.path.dirname(config))
-            Path(config).write_text("model = \"x\"", encoding="utf-8")
-            with patch.object(ww, "codex_config_path", return_value=config):
-                self.assertEqual(ww.create_assistant(folder), (folder, True))
-                Path(folder, "memory.md").write_text("kept", encoding="utf-8")
-                ww.create_assistant(folder)
-            self.assertIn("memory.md", Path(folder, "AGENTS.md").read_text(encoding="utf-8"))
-            self.assertEqual(Path(folder, "memory.md").read_text(encoding="utf-8"), "kept")
-            text = Path(config).read_text(encoding="utf-8")
-            self.assertEqual(text.count("[projects.'" + folder.lower() + "']"), 1)
-            self.assertTrue(text.startswith("model = \"x\"\n"))
-            self.assertTrue(os.path.exists(config + ".hark-backup"))
-            self.assertFalse(ww.trust_codex_folder("C:\\it's", config))
+            folder = os.path.join(d, "Hark Assistant")
+            self.assertEqual(ww.create_assistant(folder, "Dragon"), folder)
+            Path(folder, "MEMORY.md").write_text("kept", encoding="utf-8")
+            ww.create_assistant(folder, "Other")
+            files = ww.read_assistant_files(folder)
+            self.assertIn("MEMORY.md", files["AGENTS.md"])
+            self.assertIn("Your name is Dragon.", files["SOUL.md"])
+            self.assertEqual(files["MEMORY.md"], "kept")
+            self.assertRaises(ValueError, ww.write_assistant_file, folder, "..\\x.md", "")
+
+    def test_name_and_model_update_the_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            ww.create_assistant(d, "Hark")
+            ww.set_assistant_name(d, "Jarvis")
+            self.assertIn("Your name is Jarvis.", Path(d, "SOUL.md").read_text(encoding="utf-8"))
+            self.assertNotIn("Hark.", Path(d, "SOUL.md").read_text(encoding="utf-8"))
+            config = Path(d, ".codex", "config.toml")
+            config.parent.mkdir()
+            config.write_text("model = \"old\"\n[mcp_servers.x]\ncommand = \"y\"\n", encoding="utf-8")
+            ww.set_assistant_model(d, "gpt-6-astra")
+            self.assertEqual(config.read_text(encoding="utf-8"), "model = \"gpt-6-astra\"\n[mcp_servers.x]\ncommand = \"y\"\n")
+            ww.set_assistant_model(d, "")
+            self.assertNotIn("model", config.read_text(encoding="utf-8").split("[")[0])
+
+    def test_continues_a_recent_chat_in_the_project(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "state_5.sqlite")
+            con = sqlite3.connect(db)
+            con.execute("create table threads (id, cwd, archived, source, recency_at_ms, updated_at_ms)")
+            now = time.time()
+            con.executemany("insert into threads values (?, ?, ?, ?, ?, ?)", [
+                ("old", "\\\\?\\D:\\A", 0, "vscode", None, (now - 3600) * 1000),
+                ("new", "\\\\?\\D:\\A", 0, "vscode", None, (now - 60) * 1000),
+                ("other", "D:\\B", 0, "vscode", None, now * 1000)])
+            con.commit()
+            con.close()
+            self.assertEqual(ww.recent_thread_in("d:\\a", 30, db, now), "new")
+            self.assertIsNone(ww.recent_thread_in("D:\\A", 0, db, now))
+            self.assertIsNone(ww.recent_thread_in("D:\\C", 30, db, now))
+        tid = "01a11c4d-6c99-74f0-a01c-247f18944f21"
+        project = {"chat_target": "project", "chat_project": "D:\\A", "chat_continue_minutes": 30}
+        with patch.object(ww, "recent_thread_in", return_value=tid):
+            self.assertEqual(ww.chat_target_url(project), "codex://threads/" + tid)
+            clicked = []
+            with patch.object(ww.os, "startfile", create=True), patch.object(ww, "TARGET_WAIT_S", 0):
+                ww.start_voice_chat(project, lambda name: clicked.append(name) or True)
+            self.assertEqual(clicked, ["Start voice chat"])
+        with patch.object(ww, "recent_thread_in", return_value=None):
+            self.assertTrue(ww.chat_target_url(project).startswith("codex://threads/new?path="))
 
     def test_knows_whether_codex_lists_the_folder_as_a_project(self):
         with tempfile.TemporaryDirectory() as d:

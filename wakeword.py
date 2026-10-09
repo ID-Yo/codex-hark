@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -155,12 +155,16 @@ DEFAULTS = {
     "notifications": True,
     "theme": "system",
     "language": "auto",  # auto: Bulgarian when Windows is in Bulgarian, otherwise English
+    "assistant_folder": "",  # the AI Assistant folder once it is turned on
+    "assistant_name": "Hark",
+    "assistant_model": "",  # empty: the Codex default
+    "chat_continue_minutes": 0,  # in a project: open again a chat there used in the last N minutes (0: always new)
     "update_check": True,  # look for a new release on GitHub after start and every UPDATE_INTERVAL_S
     "update_install": True,  # install a found release by itself (exe only), when no conversation is open
     "keys_checked": False,  # the first-run check of Codex's shortcuts has been done
 }
 # Allowed range of each number setting.
-LIMITS = {"min_conf": (0.2, 0.95), "idle_seconds": (3, 120), "dictation_idle_seconds": (1, 30),
+LIMITS = {"chat_continue_minutes": (0, 240), "min_conf": (0.2, 0.95), "idle_seconds": (3, 120), "dictation_idle_seconds": (1, 30),
           "speech_rms": (20, 5000), "codex_audio_peak": (0.001, 0.5), "cooldown_seconds": (1, 60)}
 WORD_LISTS = ("wake_words", "send_words", "draft_words", "stop_words", "decoys")
 COMMAND_LISTS = WORD_LISTS[:4]  # a word may appear in only one of these per language
@@ -876,25 +880,49 @@ def codex_targets(db=None):
     return out
 
 
-ASSISTANT_NAME = "Hark Assistant"
-ASSISTANT_AGENTS = """# Personal assistant
+ASSISTANT_DIR_NAME = "Hark Assistant"
+ASSISTANT_FILES = ("AGENTS.md", "SOUL.md", "MEMORY.md")
+ASSISTANT_TEMPLATES = {
+    "AGENTS.md": """# Personal assistant
 
-You are the user's personal assistant. The user talks to you by voice through Codex Hark, so keep answers short
-and easy to listen to, in the language the user speaks.
+The user talks to you by voice through Codex Hark. Keep answers short and easy to listen to, in the language
+the user speaks.
+
+## At the start of every conversation
+
+1. Read SOUL.md: who you are and how you behave.
+2. Read MEMORY.md: what you know about the user.
 
 ## Memory
 
-- At the start of every conversation, read memory.md in this folder.
 - When the user tells you something worth keeping (preferences, facts about them, plans, tasks, decisions) or
-  asks you to remember something, add a short dated line to memory.md under the right heading.
-- Keep memory.md short: update or remove outdated lines instead of adding duplicates.
+  asks you to remember something, add a short dated line to MEMORY.md under the right heading.
+- Keep MEMORY.md short: update or remove outdated lines instead of adding duplicates.
 - Never store passwords, keys, codes or other secrets.
 
 ## Workspace
 
 This folder is your workspace. Keep notes and files you create here. Ask before you change anything outside it.
-"""
-ASSISTANT_MEMORY = "# Memory\n\n## About the user\n\n## Preferences\n\n## Ongoing\n\n## Notes\n"
+""",
+    "SOUL.md": """# Soul
+
+Your name is {name}.
+
+You are a calm, warm and direct personal assistant. You say what you think, you admit what you do not know,
+and you ask when something is unclear instead of guessing.
+""",
+    "MEMORY.md": """# Memory
+
+## About the user
+
+## Preferences
+
+## Ongoing
+
+## Notes
+""",
+}
+NAME_LINE = re.compile(r"^Your name is .*$", re.M)
 
 
 def documents_dir():
@@ -905,43 +933,80 @@ def documents_dir():
     return os.path.join(os.path.expanduser("~"), "Documents")
 
 
-def codex_config_path():
-    home = os.environ.get("CODEX_HOME") or os.path.join(os.path.expanduser("~"), ".codex")
-    return os.path.join(home, "config.toml")
+def assistant_default_folder():
+    return os.path.join(documents_dir(), ASSISTANT_DIR_NAME)
 
 
-def trust_codex_folder(folder, path=None):
-    """Mark the folder as trusted in Codex's config.toml (as Codex's own "Trust folder" does), so a voice chat
-    can start there without the trust question. Keeps config.toml.hark-backup. Returns False if it cannot."""
-    path = path or codex_config_path()
-    key = folder.lower()
-    if "'" in key or "\n" in key:
-        return False  # not expressible as a TOML literal key
-    header = f"[projects.'{key}']"
-    text = ""
-    if os.path.exists(path):
+def create_assistant(folder, name):
+    """Create the assistant folder with AGENTS.md, SOUL.md and MEMORY.md. Existing files are kept."""
+    os.makedirs(folder, exist_ok=True)
+    for file in ASSISTANT_FILES:
+        path = os.path.join(folder, file)
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(ASSISTANT_TEMPLATES[file].format(name=name or "Hark"))
+    return folder
+
+
+def read_assistant_files(folder):
+    out = {}
+    for file in ASSISTANT_FILES:
+        try:
+            with open(os.path.join(folder, file), encoding="utf-8") as f:
+                out[file] = f.read()
+        except OSError:
+            out[file] = ""
+    return out
+
+
+def write_assistant_file(folder, file, text):
+    if file not in ASSISTANT_FILES:
+        raise ValueError(f"not an assistant file: {file}")
+    with open(os.path.join(folder, file), "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+
+
+def set_assistant_name(folder, name):
+    """Put the name in SOUL.md's "Your name is ..." line (added at the top if the line is gone)."""
+    path = os.path.join(folder, "SOUL.md")
+    try:
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        if header in text:
-            return True
-        shutil.copyfile(path, path + ".hark-backup")
-    else:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(("" if not text or text.endswith("\n") else "\n") + f"\n{header}\ntrust_level = \"trusted\"\n")
-    return True
+    except OSError:
+        return
+    line = f"Your name is {name or 'Hark'}."
+    text = NAME_LINE.sub(line, text, count=1) if NAME_LINE.search(text) else line + "\n\n" + text
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
 
 
-def create_assistant(folder=None):
-    """Create the assistant folder with AGENTS.md and memory.md (kept if they exist) and trust it in Codex."""
-    folder = folder or os.path.join(documents_dir(), ASSISTANT_NAME)
-    os.makedirs(folder, exist_ok=True)
-    for name, text in (("AGENTS.md", ASSISTANT_AGENTS), ("memory.md", ASSISTANT_MEMORY)):
-        file = os.path.join(folder, name)
-        if not os.path.exists(file):
-            with open(file, "w", encoding="utf-8") as f:
-                f.write(text)
-    return folder, trust_codex_folder(folder)
+def set_assistant_model(folder, model):
+    """Codex reads a trusted project's .codex/config.toml; its model line picks the model for chats there.
+    An empty model removes the line, so the Codex default applies."""
+    path = os.path.join(folder, ".codex", "config.toml")
+    lines = []
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            lines = [ln for ln in f.read().splitlines() if not re.match(r"\s*model\s*=", ln)]
+    if model:
+        lines.insert(0, "model = " + json.dumps(model))
+    if not lines and not os.path.exists(path):
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines) + ("\n" if lines else ""))
+
+
+def codex_models():
+    """The models Codex lists (models_cache.json): [{"slug", "name"}]."""
+    home = os.environ.get("CODEX_HOME") or os.path.join(os.path.expanduser("~"), ".codex")
+    try:
+        with open(os.path.join(home, "models_cache.json"), encoding="utf-8") as f:
+            models = json.load(f).get("models", [])
+    except (OSError, ValueError):
+        return []
+    return [{"slug": m["slug"], "name": m.get("display_name") or m["slug"]} for m in models
+            if m.get("slug") and m.get("visibility") == "list"]
 
 
 def codex_has_project(folder, db=None):
@@ -950,9 +1015,42 @@ def codex_has_project(folder, db=None):
     return any(os.path.normcase(os.path.normpath(p["path"])) == want for p in codex_targets(db)["projects"])
 
 
+RECENT_SQL = """
+select id, cwd, coalesce(updated_at_ms, recency_at_ms) as at from threads
+where archived = 0 and source not like '%subagent%' and coalesce(updated_at_ms, recency_at_ms) >= ?
+order by at desc limit 50
+"""
+
+
+def recent_thread_in(folder, minutes, db=None, now=None):
+    """The newest chat in the folder with activity in the last minutes; None if there is none."""
+    db = db or codex_state_db()
+    if not db or minutes <= 0:
+        return None
+    want = os.path.normcase(os.path.normpath(folder))
+    since = ((now or time.time()) - minutes * 60) * 1000
+    try:
+        con = sqlite3.connect("file:" + db.replace("\\", "/") + "?mode=ro", uri=True, timeout=1)
+        try:
+            for tid, cwd, _ in con.execute(RECENT_SQL, (since,)):
+                path = (cwd or "").removeprefix("\\\\?\\")
+                if path and os.path.normcase(os.path.normpath(path)) == want:
+                    return tid
+        finally:
+            con.close()
+    except sqlite3.Error as e:
+        logging.warning("cannot read the Codex chats: %s", e)
+    return None
+
+
 def chat_target_url(settings):
-    """The codex:// link that opens the chat or project a voice chat should go to; None for a new chat."""
+    """The codex:// link that opens the chat or project a voice chat should go to; None for a new chat.
+    In a project, a chat there with activity in the last chat_continue_minutes is opened again instead."""
     target = settings.get("chat_target", "new")
+    if target == "project" and settings.get("chat_project"):
+        recent = recent_thread_in(settings["chat_project"], settings.get("chat_continue_minutes", 0))
+        if recent and THREAD_ID.fullmatch(recent):
+            return "codex://threads/" + recent
     if target == "thread" and THREAD_ID.fullmatch(settings.get("chat_thread", "")):
         return "codex://threads/" + settings["chat_thread"]
     if target == "project" and settings.get("chat_project"):
@@ -970,7 +1068,8 @@ def start_voice_chat(settings, click=None):
         try:
             os.startfile(url)
             time.sleep(TARGET_WAIT_S)
-            if click and any(click(name) for name in VOICE_BUTTONS[settings["chat_target"]]):
+            buttons = VOICE_BUTTONS["thread" if url.startswith("codex://threads/") and "/new?" not in url else settings["chat_target"]]
+            if click and any(click(name) for name in buttons):
                 return
             logging.warning("no voice chat button in Codex; the voice chat key starts it outside the project")
         except OSError as e:

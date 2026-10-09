@@ -41,7 +41,7 @@ Say the wake word near your microphone. Left-click the tray icon, or run the exe
 |---|---|
 | Home | Status, pause/resume, whether Codex is open, live microphone level, recent events |
 | Voice commands | Words for each language, silence timeout, sensitivity |
-| Microphone | Device choice, live level, speech threshold, automatic calibration |
+| AI Assistant | A personal assistant with memory: folder of your choice, name, model, the AGENTS.md / SOUL.md / MEMORY.md files, continuing the last chat |
 | Activity | Last 1000 events with search and filters |
 | Settings | Interface language, notifications, sound, theme, Codex shortcut check; recognition languages (add, remove, switch on or off); Windows: start with Windows, data folder, defaults |
 | About | Version, description, author, links and license |
@@ -50,7 +50,7 @@ Tray icon colors: green listening, blue voice chat, orange dictation, gray pause
 
 Hark checks for a new version a minute after start and every 12 hours: it reads the latest release of this repository from the GitHub API and, if it is newer, shows a notification and a download link in **Settings > New versions** (switch it off there, or press **Check now**). With **Install updates automatically** on (the default), the exe build then downloads the new `CodexHark.exe` from the release, checks it against the release `SHA256SUMS.txt`, puts it in place of the running exe (the old one is kept as `CodexHark.exe.old` until the next start) and restarts, but only while no conversation or dictation is open. **Update now** does the same at once. Switch automatic install off to update by hand: close Hark from the tray and replace `CodexHark.exe`. The folder with the exe must be writable by your user.
 
-**Create a personal assistant** under that setting does it in one step: it makes `Documents\Hark Assistant` with `AGENTS.md` and `memory.md`, marks the folder trusted in Codex (`config.toml`, backup `config.toml.hark-backup`), opens it in Codex until it shows as a project, and sends every voice chat there. The `AGENTS.md` tells the agent to read `memory.md` at the start and to note what is worth remembering, so the assistant keeps a memory between conversations. Existing files are never overwritten.
+**AI Assistant** turns this into a personal assistant. **Turn the assistant on** makes a folder of your choice (by default `Documents\Hark Assistant`) with `AGENTS.md`, `SOUL.md` and `MEMORY.md`, opens it in Codex until it shows as a project (Codex may ask once to trust it) and sends every voice chat there. `AGENTS.md` tells the agent to read `SOUL.md` and `MEMORY.md` at the start and to note what is worth remembering, so the assistant keeps a memory between conversations. The screen edits the three files, sets the name (in `SOUL.md`) and the model (the folder's `.codex/config.toml`; the voice part of Codex keeps its own model), and **Continue the last chat if it was less than N minutes ago** (30 by default) reopens the assistant's last chat instead of starting a new one. **Move…** switches to another folder and leaves the old one as it is. Existing files are never overwritten.
 
 By default every voice chat is a new chat without a project. **Voice commands > Voice chat > Conversations go to** changes that: **One chat** sends every conversation to a chat you pick, **One project** starts each conversation as a new chat in a project you pick (the project must be trusted in Codex, or Codex asks first). Hark opens the chat or project with a `codex://` link, then presses the voice chat button there (`Alt+Z` alone always starts a chat outside any project). In a project the chat runs in the project folder, so Codex reads its `AGENTS.md`. The lists come from the local Codex database `state_*.sqlite` (read-only).
 
@@ -106,7 +106,7 @@ All enabled languages listen at the same time. Each one adds about 200 MB of mem
 - The activity log (`events.jsonl`, `wakeword.log` in `%APPDATA%\CodexHark`) stores event types, times and confidence values. It never holds audio or dictated text.
 - Hark depends on internals of Codex Desktop: the voice-chat key, `keybindings.json`, the English button names `Dictate`, `Stop dictation` and `Transcribe and send`, the package name, the `ChatGPT.exe` process and the thread-history database. If Codex changes them, Hark needs an update.
 - Say "Codex, write" as one phrase; a long pause between the words can open a voice chat instead.
-- Silence thresholds were tuned on one laptop microphone; another microphone may need adjusting in the Microphone screen.
+- Silence thresholds were tuned on one laptop microphone; another microphone may need adjusting in Settings > Microphone.
 - On every start the exe unpacks about 200 MB to `%TEMP%` (usually drive C:) and removes it on exit.
 - Synthetic speech from loudspeakers is recognized less reliably than a live voice.
 

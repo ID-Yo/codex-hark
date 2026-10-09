@@ -49,7 +49,8 @@ TEXT = {
            "states": {"starting": "starting", "listening": "listening", "chat": "voice chat",
                       "dictation": "dictation", "paused": "paused", "error": "error"}},
 }
-NO_RESTART = {"theme", "notifications", "language", "update_check", "update_install"}  # applied without restarting the listener
+NO_RESTART = {"theme", "notifications", "language", "update_check", "update_install", "assistant_folder",
+              "assistant_name", "assistant_model"}  # applied without restarting the listener
 MAX_RESTARTS = 3  # within RESTART_WINDOW_S
 RESTART_WINDOW_S = 300
 NOTICE_INTERVAL_S = 60
@@ -241,9 +242,42 @@ class Api:
         """Recent Codex chats and the projects, for choosing where voice chats go."""
         return ww.codex_targets()
 
-    def create_assistant(self):
-        """The Voice chat button: make the assistant folder and project and send voice chats there."""
-        return self._app.create_assistant()
+    def create_assistant(self, folder=None):
+        """Turn the AI Assistant on in the folder (the current or default one if None): make its files and
+        project and send voice chats there. A different folder moves the assistant; the old one is left as it is."""
+        if folder is not None and (not isinstance(folder, str) or not os.path.isabs(folder)):
+            return {"ok": False, "text": "not a full folder path"}
+        return self._app.create_assistant(folder)
+
+    def choose_folder(self, start=""):
+        """A Windows folder picker; returns the chosen folder or "" if cancelled."""
+        start = start if isinstance(start, str) and os.path.isdir(start) else ww.documents_dir()
+        result = self._app.window.create_file_dialog(webview.FOLDER_DIALOG, directory=start)
+        return result[0] if result else ""
+
+    def assistant_info(self):
+        """The assistant folder, whether Codex lists it as a project, its files and the models to choose from."""
+        folder = self._app.settings.get("assistant_folder", "")
+        ready = bool(folder) and os.path.isdir(folder)
+        return {"folder": folder or ww.assistant_default_folder(), "ready": ready,
+                "project": ready and ww.codex_has_project(folder),
+                "files": ww.read_assistant_files(folder) if ready else {}, "models": ww.codex_models()}
+
+    def save_assistant_file(self, file, text):
+        folder = self._app.settings.get("assistant_folder", "")
+        if not folder or not os.path.isdir(folder):
+            return {"ok": False, "text": "no assistant folder"}
+        try:
+            ww.write_assistant_file(folder, file, text)
+        except (OSError, ValueError) as e:
+            return {"ok": False, "text": str(e)}
+        return {"ok": True}
+
+    def open_assistant_folder(self):
+        folder = self._app.settings.get("assistant_folder", "")
+        if folder and os.path.isdir(folder):
+            os.startfile(folder)
+        return True
 
     def check_updates(self):
         """The Settings button: look for a new version now."""
@@ -571,11 +605,13 @@ class App:
         set_autostart(autostart_command() is None)
         self.icon.update_menu()
 
-    def create_assistant(self):
+    def create_assistant(self, folder=None):
         """Create the assistant folder (AGENTS.md, memory.md), open it in Codex until it is a project, and make it
         the target of voice chats. Returns the result and the saved settings for the window."""
+        folder = os.path.normpath(folder or self.settings.get("assistant_folder") or ww.assistant_default_folder())
         try:
-            folder, trusted = ww.create_assistant()
+            ww.create_assistant(folder, self.settings.get("assistant_name", "Hark"))
+            ww.set_assistant_model(folder, self.settings.get("assistant_model", ""))
         except OSError as e:
             return {"ok": False, "text": str(e)}
         url = "codex://threads/new?path=" + urllib.parse.quote(folder, safe="")
@@ -589,16 +625,27 @@ class App:
                     break
             if project:
                 break
-        settings = {**self.settings, "chat_target": "project", "chat_project": folder}
+        settings = {**self.settings, "chat_target": "project", "chat_project": folder, "assistant_folder": folder}
+        if not self.settings.get("assistant_folder"):
+            settings["chat_continue_minutes"] = settings.get("chat_continue_minutes") or 30
         ww.save_settings(settings)
         self.apply_settings(settings)
         self.events.add("settings", "assistant_ready" if project else "assistant_no_project", folder=folder)
-        logging.info("assistant folder %s (trusted %s, project %s)", folder, trusted, project)
-        return {"ok": True, "folder": folder, "project": project, "trusted": trusted, "settings": settings}
+        logging.info("assistant folder %s (project %s)", folder, project)
+        return {"ok": True, "folder": folder, "project": project, "settings": settings}
 
     def apply_settings(self, settings):
         """Store new settings; restart the listener only if something it uses has changed."""
         old, self.settings = self.settings, settings
+        folder = settings.get("assistant_folder")
+        if folder and os.path.isdir(folder):
+            try:
+                if old.get("assistant_name") != settings.get("assistant_name"):
+                    ww.set_assistant_name(folder, settings.get("assistant_name", ""))
+                if old.get("assistant_model") != settings.get("assistant_model"):
+                    ww.set_assistant_model(folder, settings.get("assistant_model", ""))
+            except OSError:
+                logging.exception("cannot update the assistant files")
         self.events.add("settings", "settings_saved")
         self.icon.title = self.tooltip()
         self.icon.update_menu()

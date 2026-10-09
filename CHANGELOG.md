@@ -4,6 +4,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-09
+
+### Added
+- **AI Assistant** tab: turn the assistant on in a folder of your choice (AGENTS.md, SOUL.md, MEMORY.md), edit the three files in tabs, set its name and model (the folder's .codex/config.toml), move it to another folder.
+- Continue the last chat: in a project, a voice chat reopens the last chat there if it was used less than N minutes ago (0 = always new; 30 for the assistant).
+
+### Changed
+- Microphone moved into Settings; AI Assistant takes its place in the top menu.
+- Hark no longer writes Codex's config.toml to trust the assistant folder; Codex asks once itself (it reads config.toml only at its start).
+
 ## [0.15.0] - 2026-10-09
 
 ### Added
