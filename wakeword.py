@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.11.0"
+__version__ = "0.11.1"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -257,6 +257,10 @@ CODEX_MIC_KEY = (r"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessMan
                  r"\ConsentStore\microphone\OpenAI.Codex_2p2nqsd0c76g0")
 DICTATE_BUTTON = "Dictate"
 STOP_DICTATION_BUTTON = "Stop dictation"  # present while dictation is running; inserts the text
+# Codex's own voice chat buttons. The voice chat key always starts a chat outside any project; these start it
+# in the open chat ("Start voice chat") or as a new chat in the open project ("Start new voice chat").
+VOICE_BUTTONS = {"thread": ("Start voice chat",), "project": ("Start new voice chat", "Start voice chat")}
+END_VOICE_BUTTON = "End voice chat"
 SEND_DICTATION_BUTTON = "Transcribe and send"  # ends dictation and sends the text to the agent
 MIC_RETRY_S = 10
 TARGET_WAIT_S = 1.5  # time Codex gets to open the chosen chat before the voice chat key
@@ -768,16 +772,42 @@ def chat_target_url(settings):
     return None
 
 
-def start_voice_chat(settings):
-    """Open the chosen chat or project in Codex first, then press the voice chat key."""
+def start_voice_chat(settings, click=None):
+    """Open the chosen chat or project in Codex and start the voice chat with its button there.
+
+    click(name) presses a Codex button by name. Without a target, or if the button is missing, the voice chat
+    key is pressed, which starts a new chat outside any project."""
     url = chat_target_url(settings)
     if url:
         try:
             os.startfile(url)
             time.sleep(TARGET_WAIT_S)
+            if click and any(click(name) for name in VOICE_BUTTONS[settings["chat_target"]]):
+                return
+            logging.warning("no voice chat button in Codex; the voice chat key starts it outside the project")
         except OSError as e:
             logging.warning("cannot open %s: %s", url, e)
     press_voice_chat()
+
+
+def click_codex_button(name, tries=3):
+    """Press a Codex button by its accessible name from any thread (the window's Try button)."""
+    comtypes.CoInitialize()
+    uia = comtypes.client.CreateObject(CUIAutomation, interface=IUIAutomation)
+    cond = uia.CreateAndCondition(
+        uia.CreatePropertyCondition(UIA_NamePropertyId, name),
+        uia.CreatePropertyCondition(UIA_ControlTypePropertyId, UIA_ButtonControlTypeId))
+    for attempt in range(tries):
+        for hwnd in codex_windows():
+            try:
+                button = uia.ElementFromHandle(hwnd).FindFirst(TreeScope_Descendants, cond)
+                if button:
+                    button.GetCurrentPattern(UIA_InvokePatternId).QueryInterface(IUIAutomationInvokePattern).Invoke()
+                    return True
+            except COMError:
+                continue
+        time.sleep(0.3)
+    return False
 
 
 # The newest voice chat session that has not closed, and whether its agent has an unfinished turn.
@@ -870,12 +900,17 @@ class Listener:
                 time.sleep(0.3)
         return None
 
-    def _click(self, name):
-        button = self._find_button(name, tries=3)
+    def _click(self, name, tries=3):
+        button = self._find_button(name, tries=tries)
         if not button:
             return False
         button.GetCurrentPattern(UIA_InvokePatternId).QueryInterface(IUIAutomationInvokePattern).Invoke()
         return True
+
+    def _end_chat(self):
+        """End the voice chat with Codex's End button; the voice chat key if there is none."""
+        if not self._click(END_VOICE_BUTTON, tries=1):
+            press_voice_chat()
 
     def run(self):
         comtypes.CoInitialize()
@@ -1023,7 +1058,7 @@ class Listener:
                     if hit:
                         _, wake, following, conf = hit
                         ev.add("chat", "stop_phrase", phrase=f"{wake}, {following}", conf=f"{conf:.2f}")
-                        press_voice_chat()
+                        self._end_chat()
                         last_sound = now
                         ignore_until = now + 2
                         continue
@@ -1031,7 +1066,7 @@ class Listener:
                         last_sound = now
                     elif s["idle_close"] and now - last_sound > s["idle_seconds"]:
                         ev.add("chat", "chat_closing", seconds=f"{s['idle_seconds']:g}")
-                        press_voice_chat()
+                        self._end_chat()
                         last_sound = now  # do not press again while Codex closes the chat
                     continue
                 if mode is not None:
@@ -1065,7 +1100,7 @@ class Listener:
                     beep()
                 if not dictate:
                     ev.add("chat", "wake_chat", phrase=wake, conf=f"{conf:.2f}")
-                    start_voice_chat(s)
+                    start_voice_chat(s, self._click)
                 elif self._click(DICTATE_BUTTON):
                     ev.add("dictation", "wake_dictation" if send else "wake_draft",
                            phrase=f"{wake}, {following}", conf=f"{conf:.2f}")

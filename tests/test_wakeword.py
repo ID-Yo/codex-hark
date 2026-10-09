@@ -136,6 +136,18 @@ class ChatTargetTests(unittest.TestCase):
                          "codex://threads/new?path=D%3A%5CCoding%5CGeneral")
         self.assertIsNone(ww.chat_target_url({"chat_target": "thread", "chat_thread": ""}))
 
+    def test_project_voice_chat_uses_the_codex_button_and_falls_back_to_the_key(self):
+        settings = {"chat_target": "project", "chat_project": "D:\\Coding\\General"}
+        clicked = []
+        with patch.object(ww.os, "startfile", create=True) as opened, patch.object(ww, "press_voice_chat") as key, \
+                patch.object(ww, "TARGET_WAIT_S", 0):
+            ww.start_voice_chat(settings, lambda name: clicked.append(name) or True)
+            self.assertEqual((clicked, key.call_count), (["Start new voice chat"], 0))
+            ww.start_voice_chat(settings, lambda name: False)
+            self.assertEqual(key.call_count, 1)
+            ww.start_voice_chat({"chat_target": "new"}, lambda name: True)
+            self.assertEqual((key.call_count, opened.call_count), (2, 2))
+
     def test_validation_refuses_unknown_targets_and_bad_ids(self):
         _, errors = ww.validate_settings({"chat_target": "chatgpt", "chat_thread": "x/../settings"}, lang="en")
         self.assertEqual(set(errors), {"chat_target", "chat_thread"})

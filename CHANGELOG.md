@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-10-09
+
+### Fixed
+- "One project" and "One chat" really put the voice chat there. The Codex voice chat key always starts a chat outside any project, so Hark now opens the target and presses the Codex voice chat button in it ("Start new voice chat" / "Start voice chat"); the key is only the fallback.
+
 ## [0.11.0] - 2026-10-09
 
 ### Added

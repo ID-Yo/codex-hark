@@ -48,7 +48,7 @@ Say the wake word near your microphone. Left-click the tray icon, or run the exe
 
 Tray icon colors: green listening, blue voice chat, orange dictation, gray paused, red error. Settings are stored in `%APPDATA%\CodexHark\settings.json`.
 
-By default every voice chat is a new chat without a project. **Voice commands > Voice chat > Conversations go to** changes that: **One chat** sends every conversation to a chat you pick, **One project** starts each conversation as a new chat in a project you pick (the project must be trusted in Codex, or Codex asks first). Hark opens the chat or project with a `codex://` link, then presses the voice chat key. The lists come from the local Codex database `state_*.sqlite` (read-only).
+By default every voice chat is a new chat without a project. **Voice commands > Voice chat > Conversations go to** changes that: **One chat** sends every conversation to a chat you pick, **One project** starts each conversation as a new chat in a project you pick (the project must be trusted in Codex, or Codex asks first). Hark opens the chat or project with a `codex://` link, then presses the voice chat button there (`Alt+Z` alone always starts a chat outside any project). In a project the chat runs in the project folder, so Codex reads its `AGENTS.md`. The lists come from the local Codex database `state_*.sqlite` (read-only).
 
 The interface also opens in a browser with sample data: open `ui/index.html#home-light-en` (screen, theme and language are the parts of the hash).
 

@@ -255,7 +255,7 @@ class Api:
         return autostart_command() is not None
 
     def test_chat(self):
-        ww.start_voice_chat(self._app.settings)
+        ww.start_voice_chat(self._app.settings, ww.click_codex_button)
         return True
 
     def measure(self, seconds):
