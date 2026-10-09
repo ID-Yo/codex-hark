@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import time
+import webbrowser
 import winreg
 
 import wakeword as ww  # first: it stops platform from querying WMI
@@ -24,23 +25,25 @@ COLORS = {"starting": (120, 132, 150), "listening": (7, 139, 69), "chat": (8, 10
           "dictation": (214, 106, 0), "paused": (120, 132, 150), "error": (181, 40, 53)}
 TEXT = {
     "bg": {"title": "Codex Hark", "open": "Отвори", "pause": "Пауза", "resume": "Продължи",
-           "restart": "Рестартирай слушателя", "autostart": "Стартирай с Windows", "quit": "Изход",
+           "restart": "Рестартирай Hark", "autostart": "Стартирай с Windows", "quit": "Изход",
            "running": "Codex Hark вече работи.",
            "words": "Моделът за {language} не познава: {words}. Тези думи няма да се разпознават.",
+           "chatgpt": "ChatGPT Classic не е намерен или не е влязъл в профила, затова Hark не успя да започне разговор.",
            "mic": "Няма достъп до микрофона. Нов опит след 10 s.",
            "codex": "Бутонът Dictate не е намерен. Отворен ли е Codex?",
-           "crash": "Слушателят се срина и се рестартира: {error}",
-           "stopped": "Слушателят спря: {error} Отворете прозореца и изберете „Рестартирай слушателя“.",
+           "crash": "Hark се срина и се рестартира: {error}",
+           "stopped": "Hark спря: {error} Отворете прозореца и изберете „Рестартирай Hark“.",
            "states": {"starting": "стартира", "listening": "слуша", "chat": "гласов чат",
                       "dictation": "диктовка", "paused": "пауза", "error": "грешка"}},
     "en": {"title": "Codex Hark", "open": "Open", "pause": "Pause", "resume": "Resume",
-           "restart": "Restart listener", "autostart": "Start with Windows", "quit": "Quit",
+           "restart": "Restart Hark", "autostart": "Start with Windows", "quit": "Quit",
            "running": "Codex Hark is already running.",
            "mic": "The microphone is not available. Retrying in 10 s.",
            "codex": "The Dictate button was not found. Is Codex open?",
            "words": "The {language} model does not know: {words}. These words will not be recognized.",
-           "crash": "The listener crashed and is restarting: {error}",
-           "stopped": "The listener stopped: {error} Open the window and choose Restart listener.",
+           "chatgpt": "ChatGPT Classic was not found or is not signed in, so Hark could not start the conversation.",
+           "crash": "Hark crashed and is restarting: {error}",
+           "stopped": "Hark stopped: {error} Open the window and choose Restart Hark.",
            "states": {"starting": "starting", "listening": "listening", "chat": "voice chat",
                       "dictation": "dictation", "paused": "paused", "error": "error"}},
 }
@@ -175,6 +178,17 @@ def set_clipboard(text):
         user32.CloseClipboard()
 
 
+def primary_screen_size():
+    """Logical size of the primary screen; a roomy default when it cannot be read."""
+    try:
+        screens = webview.screens
+        screen = next((s for s in screens if s.x == 0 and s.y == 0), screens[0])
+        return screen.width, screen.height
+    except Exception:
+        logging.exception("screen size unknown")
+        return 1920, 1080
+
+
 class Api:
     """Methods the window calls as window.pywebview.api.<name>(...). Every result is JSON."""
 
@@ -194,7 +208,8 @@ class Api:
         app = self._app
         return {"settings": app.settings, "defaults": ww.DEFAULTS, "limits": ww.LIMITS,
                 "devices": ww.input_devices(), "autostart": autostart_command() is not None,
-                "system_dark": system_dark(), "version": ww.__version__, "lang": app.lang()}
+                "system_dark": system_dark(), "version": ww.__version__, "lang": app.lang(),
+                "hotkeys": ww.codex_hotkeys()}
 
     def save_settings(self, raw):
         app = self._app
@@ -218,6 +233,10 @@ class Api:
         found = [{"word": w, "known": known(lang, w)} for w in words]
         return {"status": "ok" if all(f["known"] for f in found) else "unknown", "words": found}
 
+    def check_keys(self):
+        """The Settings button: check Codex's keybindings now and add the ones Hark needs."""
+        return self._app.check_keys()
+
     def reset_settings(self):
         ww.save_settings(ww.DEFAULTS)
         self._app.apply_settings(dict(ww.DEFAULTS))
@@ -232,15 +251,15 @@ class Api:
         return autostart_command() is not None
 
     def test_chat(self):
-        ww.press_alt_z()
+        ww.press_voice_chat()
         return True
 
     def measure(self, seconds):
         """Microphone levels over the next seconds; the window turns two of these into a threshold."""
         listener = self._app.listener
         if not listener or self._app.state != "listening":
-            return {"ok": False, "error": {"bg": "Слушателят трябва да слуша (не на пауза и не в разговор).",
-                                           "en": "The listener must be listening (not paused or in a conversation)."}[self._app.lang()]}
+            return {"ok": False, "error": {"bg": "Hark трябва да слуша (не на пауза и не в разговор).",
+                                           "en": "Hark must be listening (not paused or in a conversation)."}[self._app.lang()]}
         levels, end = [], time.monotonic() + min(float(seconds), 10)
         while time.monotonic() < end:
             levels.append(listener.level)
@@ -272,6 +291,10 @@ class Api:
 
     def copy(self, text):
         return set_clipboard(text)
+
+    def open_url(self, url):
+        """Open one of the About links in the default browser; any other address is refused."""
+        return bool(ww.about_link(url)) and webbrowser.open(url)
 
 
 class App:
@@ -387,6 +410,23 @@ class App:
         except Exception:
             logging.exception("notification failed")
 
+    def check_keys(self, first_run=False):
+        """Check Codex's keybindings (adding what Hark needs), tell the user, and return the result for the window."""
+        result = ww.check_codex_keys(fix=True)
+        status, hotkeys = result["status"], ww.codex_hotkeys()
+        args = {"commands": ", ".join(result["added"]), "voice": hotkeys["voice"], "dictation": hotkeys["dictation"],
+                "conflicts": ", ".join(f"{ww.CODEX_KEYS[c]} ({other})" for c, other in result["conflicts"].items()),
+                "error": result.get("error", "")}
+        code = "keys_" + status
+        self.events.add("settings" if status in ("ok", "added") else "error", code, **args)
+        text, detail = ww.message(code, self.lang(), **args)
+        message = f"{text} — {detail}" if detail else text
+        if status != "ok":
+            self.notify(code, message)
+        if first_run and status in ("ok", "added", "conflict", "invalid"):
+            ww.save_settings({**ww.load_settings(), "keys_checked": True})
+        return {"status": status, "text": message, "hotkeys": hotkeys}
+
     def show(self):
         if self.window:
             self.window.show()
@@ -437,6 +477,8 @@ class App:
 
     def supervise(self):
         """Run the listener, re-reading settings on each start; restart it after a crash."""
+        if not ww.load_settings().get("keys_checked"):
+            self.check_keys(first_run=True)
         while not self.quitting:
             self.restart_requested = False
             try:
@@ -480,13 +522,14 @@ class App:
     def run(self, show_window):
         self.settings = ww.load_settings()
         self.ensure_models()
+        width, height = ww.window_size(*primary_screen_size())
         self.window = webview.create_window(
-            self.t("title"), resource("ui", "index.html"), js_api=Api(self), width=1000, height=700,
-            min_size=(760, 520), hidden=not show_window, background_color="#F2F6FC")
+            self.t("title"), resource("ui", "index.html"), js_api=Api(self), width=width, height=height,
+            min_size=(700, 460), hidden=not show_window, background_color="#F2F6FC")
         self.window.events.closing += self.on_closing
+        self.icon.run_detached()
         threading.Thread(target=self.supervise, name="listener", daemon=True).start()
         threading.Thread(target=self.watch_second_launch, name="show", daemon=True).start()
-        self.icon.run_detached()
         icon = os.path.join(ww.DATA_DIR, "icon.ico")
         save_icon(icon)
         webview.start(private_mode=True, storage_path=os.path.join(ww.DATA_DIR, "webview"), icon=icon)

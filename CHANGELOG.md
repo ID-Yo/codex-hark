@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-09
+
+### Added
+- About card in Settings: description, version, author and the link to https://IvanYosifov.com.
+- On the first start Hark checks that Codex has keys for voice chat and dictation (`realtimeVoice` and `globalDictationHold` in `keybindings.json`) and adds the missing ones; a key you chose is kept and used. Settings has a button to run the check again.
+- Optional ChatGPT Classic commands (off by default): "Chat" starts a voice conversation, "Chat, write" starts dictation, "Chat, stop" ends the conversation.
+
+### Changed
+- The window starts smaller and always fits the screen (about 880x590 on a 1280x720 screen).
+- Smaller fonts and controls throughout.
+- The app is called Hark everywhere instead of "listener".
+
 ## [0.6.0] - 2026-10-09
 
 ### Added
