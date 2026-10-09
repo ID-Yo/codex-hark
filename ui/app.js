@@ -8,7 +8,7 @@ const icon = (id) => '<svg class="icon" aria-hidden="true"><use href="#' + id + 
 
 const I18N = {
   bg: {
-    title: "Codex Hark", product: "Hark", nav: ["Начало", "Гласови команди", "Микрофон", "Дневник", "Настройки"],
+    title: "Codex Hark", product: "Hark", nav: ["Начало", "Гласови команди", "Микрофон", "Дневник", "Настройки", "Относно"],
     states: { starting: ["Стартира", "Hark стартира…"], listening: ["Слуша", "Слуша за ключовата дума"], chat: ["Гласов чат", "Гласовият чат е отворен"], dictation: ["Диктовка", "Диктовка в текущия чат"], paused: ["Пауза", "Слушането е на пауза"], error: ["Грешка", "Hark има проблем"] },
     kinds: { chat: "Гласов чат", dictation: "Диктовка", sent: "Изпратено", inserted: "В полето", error: "Грешка", pause: "Пауза", settings: "Настройки" },
     stateEyebrow: "Състояние", ready: "Готов за „{w}“", onPause: "На пауза", localNote: "Hark работи локално. Аудиото не се записва и не излиза от компютъра.",
@@ -30,6 +30,7 @@ const I18N = {
     aboutTitle: "За приложението", aboutText: "Hark слуша на вашия компютър за ключова дума и управлява Codex Desktop с глас: отваря гласов чат и диктува. Разпознаването е локално, аудиото не се записва и не излиза навън.", aboutAuthor: "Автор: Иван Йосифов",
     aboutLegal: "Лиценз MIT. Неофициален проект, не е свързан с OpenAI; „Codex“ е име на продукт на OpenAI.",
     keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери",
+    windowsTitle: "Windows", windowsHelp: "Стартиране, папка с данни и настройки по подразбиране.",
     addLang: "Добави език", removeLang: "Премахни", addLangHelp: "Моделът се изтегля след „Запази“.",
     checking: "Проверка…", wordOk: "Моделът познава: {w}", noModel: "Моделът за този език още не е изтеглен — думите не могат да се проверят.",
     wordUnknown: "Моделът не познава: {w}. Опитайте друга дума или правопис, който звучи същото.", wordUnknownRu: "Моделът не познава: {w}. Българският слот ползва руски модел — пишете думата с руски правопис.",
@@ -47,12 +48,12 @@ const I18N = {
     autostart: "Стартирай с Windows", autostartHelp: "Иконата се появява в трея след влизане.", notifications: "Известия", notificationsHelp: "При проблем: няма микрофон, Codex не е отворен.",
     beep: "Звуков сигнал при задействане", beepHelp: "Кратък тон, когато чуе ключовата дума.", theme: "Тема", themes: ["Светла", "Тъмна", "Системна"],
     language: "Език", languages: ["Български", "English", "Като Windows"],
-    localModel: "Работи изцяло локално. Модел: vosk-model-small-ru-0.22.", dataFolder: "Папка с данни", reset: "Върни настройките по подразбиране",
+    localModel: "Работи изцяло на този компютър с офлайн модели на Vosk; аудиото не излиза навън.", dataFolder: "Папка с данни", reset: "Върни настройките по подразбиране",
     resetConfirm: "Да се върнат ли всички настройки по подразбиране?", resetDone: "Настройките са върнати по подразбиране.",
     footer: "{s} · Codex {c} · {voice}", footerOpen: "е отворен", footerClosed: "не е отворен", version: "Codex Hark v{v}",
   },
   en: {
-    title: "Codex Hark", product: "Hark", nav: ["Home", "Voice commands", "Microphone", "Activity", "Settings"],
+    title: "Codex Hark", product: "Hark", nav: ["Home", "Voice commands", "Microphone", "Activity", "Settings", "About"],
     states: { starting: ["Starting", "Hark is starting…"], listening: ["Listening", "Listening for the wake word"], chat: ["Voice chat", "Voice chat is open"], dictation: ["Dictation", "Dictating in the current chat"], paused: ["Paused", "Listening is paused"], error: ["Error", "Hark has a problem"] },
     kinds: { chat: "Voice chat", dictation: "Dictation", sent: "Sent", inserted: "In the box", error: "Error", pause: "Pause", settings: "Settings" },
     stateEyebrow: "Status", ready: "Ready for “{w}”", onPause: "Paused", localNote: "Hark runs on this computer. Audio is never recorded or sent anywhere.",
@@ -74,6 +75,7 @@ const I18N = {
     aboutTitle: "About", aboutText: "Hark listens on your computer for a wake word and controls Codex Desktop by voice: it opens voice chat and dictates. Recognition is local; audio is never recorded or sent anywhere.", aboutAuthor: "Author: Ivan Yosifov",
     aboutLegal: "MIT License. Unofficial project, not affiliated with OpenAI; “Codex” is the name of an OpenAI product.",
     keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check",
+    windowsTitle: "Windows", windowsHelp: "Start-up, data folder and default settings.",
     addLang: "Add language", removeLang: "Remove", addLangHelp: "The model is downloaded after you save.",
     checking: "Checking…", wordOk: "The model knows: {w}", noModel: "The model for this language is not downloaded yet, so the words cannot be checked.",
     wordUnknown: "The model does not know: {w}. Try another word or a spelling that sounds the same.", wordUnknownRu: "The model does not know: {w}. The Bulgarian slot uses a Russian model, so write the word in Russian spelling.",
@@ -91,7 +93,7 @@ const I18N = {
     autostart: "Start with Windows", autostartHelp: "The tray icon appears after you sign in.", notifications: "Notifications", notificationsHelp: "On problems: no microphone, Codex not open.",
     beep: "Beep on trigger", beepHelp: "A short tone when it hears the wake word.", theme: "Theme", themes: ["Light", "Dark", "System"],
     language: "Language", languages: ["Български", "English", "Same as Windows"],
-    localModel: "Runs entirely on this computer. Model: vosk-model-small-ru-0.22.", dataFolder: "Data folder", reset: "Restore default settings",
+    localModel: "Runs entirely on this computer with offline Vosk models; audio never leaves it.", dataFolder: "Data folder", reset: "Restore default settings",
     resetConfirm: "Restore all settings to their defaults?", resetDone: "Settings restored to defaults.",
     footer: "{s} · Codex {c} · {voice}", footerOpen: "is open", footerClosed: "is not open", version: "Codex Hark v{v}",
   },
@@ -139,8 +141,8 @@ function fixtureApi() {
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.9.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.9.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.10.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.10.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
@@ -362,19 +364,25 @@ const screens = {
   settings() {
     const m = ui.meta;
     return '<div class="intro"><div><div class="eyebrow">' + L.setEyebrow + "</div><h1>" + L.setTitle + "</h1><small>" + L.setNote + "</small></div></div>" +
-      '<div class="grid2"><section class="card" style="gap:0">' +
-      '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
+      '<section class="card" style="gap:0">' +
+      '<div class="set"><div><strong>' + L.language + "</strong></div>" + seg("language", [["en", L.languages[1]], ["bg", L.languages[0]], ["auto", L.languages[2]]]) + "</div>" +
       '<div class="set"><div><strong>' + L.notifications + "</strong><small>" + L.notificationsHelp + "</small></div>" + toggle("notifications", L.notifications) + "</div>" +
       '<div class="set"><div><strong>' + L.beep + "</strong><small>" + L.beepHelp + "</small></div>" + toggle("beep", L.beep) + "</div>" +
-      '<div class="set"><div><strong>' + L.language + "</strong></div>" + seg("language", [["en", L.languages[1]], ["bg", L.languages[0]], ["auto", L.languages[2]]]) + "</div>" +
       '<div class="set"><div><strong>' + L.theme + "</strong></div>" + seg("theme", [["light", L.themes[0]], ["dark", L.themes[1]], ["system", L.themes[2]]]) + "</div>" +
       '<div class="set"><div><strong>' + L.keysTitle + "</strong><small>" + esc(ui.keysNote || L.keysHelp) + '</small></div><button class="btn btn-small" data-action="check-keys">' + L.keysCheck + "</button></div></section>" +
-      '<section class="card"><span class="label">' + L.aboutTitle + '</span><div class="head-title"><img class="app-icon" src="icon.png" alt=""><div><h2>' + L.title + " " + esc(m.version) + "</h2><small>" + L.aboutText + "</small></div></div>" +
-      '<div class="links"><span>' + L.aboutAuthor + '</span><a class="link" href="https://ivanyosifov.com" data-url="https://ivanyosifov.com">IvanYosifov.com</a><a class="link" href="https://github.com/ID-Yo/codex-hark" data-url="https://github.com/ID-Yo/codex-hark">GitHub</a></div><small>' + L.aboutLegal + "</small>" +
-      '<div class="alert">' + icon("info") + L.localModel + "</div>" +
-      '<div class="steps"><button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
+      '<div class="grid2">' + languagesCard() +
+      '<section class="card" style="gap:0"><div><h2>' + L.windowsTitle + "</h2><small>" + L.windowsHelp + "</small></div>" +
+      '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
+      '<div class="steps" style="padding-top:10px">' + '<button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
       (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>" +
-      languagesCard() + (dirty() ? saveBar() : "");
+      (dirty() ? saveBar() : "");
+  },
+  about() {
+    const m = ui.meta;
+    return '<div class="intro"><div><div class="eyebrow">' + L.aboutTitle + "</div><h1>" + L.title + "</h1></div></div>" +
+      '<section class="card"><div class="head-title"><img class="app-icon" src="icon.png" alt=""><div><h2>' + L.title + " " + esc(m.version) + "</h2><small>" + L.aboutText + "</small></div></div>" +
+      '<div class="links"><span>' + L.aboutAuthor + '</span><a class="link" href="https://ivanyosifov.com" data-url="https://ivanyosifov.com">IvanYosifov.com</a><a class="link" href="https://github.com/ID-Yo/codex-hark" data-url="https://github.com/ID-Yo/codex-hark">GitHub</a></div><small>' + L.aboutLegal + "</small>" +
+      '<div class="alert">' + icon("info") + L.localModel + "</div></section>";
   },
 };
 

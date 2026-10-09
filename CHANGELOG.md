@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-09
+
+### Changed
+- About has its own tab next to Settings.
+- Settings: the general options (interface language first) are on top; below them, recognition languages on the left and a Windows card (start with Windows, data folder, defaults) on the right.
+
 ## [0.9.0] - 2026-10-09
 
 ### Changed
