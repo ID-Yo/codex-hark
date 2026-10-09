@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.parse
 import webbrowser
 import winreg
 
@@ -239,6 +240,10 @@ class Api:
     def codex_targets(self):
         """Recent Codex chats and the projects, for choosing where voice chats go."""
         return ww.codex_targets()
+
+    def create_assistant(self):
+        """The Voice chat button: make the assistant folder and project and send voice chats there."""
+        return self._app.create_assistant()
 
     def check_updates(self):
         """The Settings button: look for a new version now."""
@@ -565,6 +570,31 @@ class App:
     def toggle_autostart(self):
         set_autostart(autostart_command() is None)
         self.icon.update_menu()
+
+    def create_assistant(self):
+        """Create the assistant folder (AGENTS.md, memory.md), open it in Codex until it is a project, and make it
+        the target of voice chats. Returns the result and the saved settings for the window."""
+        try:
+            folder, trusted = ww.create_assistant()
+        except OSError as e:
+            return {"ok": False, "text": str(e)}
+        url = "codex://threads/new?path=" + urllib.parse.quote(folder, safe="")
+        project = False
+        for _ in range(3):  # Codex sometimes needs a second opening before it lists the folder as a project
+            os.startfile(url)
+            for _ in range(8):
+                time.sleep(1)
+                if ww.codex_has_project(folder):
+                    project = True
+                    break
+            if project:
+                break
+        settings = {**self.settings, "chat_target": "project", "chat_project": folder}
+        ww.save_settings(settings)
+        self.apply_settings(settings)
+        self.events.add("settings", "assistant_ready" if project else "assistant_no_project", folder=folder)
+        logging.info("assistant folder %s (trusted %s, project %s)", folder, trusted, project)
+        return {"ok": True, "folder": folder, "project": project, "trusted": trusted, "settings": settings}
 
     def apply_settings(self, settings):
         """Store new settings; restart the listener only if something it uses has changed."""

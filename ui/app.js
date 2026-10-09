@@ -21,7 +21,7 @@ const I18N = {
     sendWords: "Пиши и изпрати", draftWords: "Чернова: текстът остава в полето", 
     recent: "Последни", events: "Събития", allLog: "Целият дневник →", noEvents: "Още няма събития.",
     cmdEyebrow: "Гласови команди", cmdTitle: "Какво чува и какво прави", cmdNote: "Промените действат веднага след „Запази“.",
-    chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", chatGoes: "Разговорите отиват в", targets: ["Нов чат", "Един чат", "Един проект"], chatPick: "Избери чат", projectPick: "Избери проект", noTargets: "Codex още няма чатове или проекти.",
+    chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", chatGoes: "Разговорите отиват в", asst: "Създай личен асистент", asstHelp: "Прави папка „Hark Assistant“ в Документи с AGENTS.md и memory.md, добавя я като проект в Codex и праща гласовите разговори там. Асистентът помни между разговорите в memory.md.", asstWorking: "Създава папката и проекта…", asstReady: "Готово: разговорите отиват в {f}", asstNoProject: "Папката {f} е готова и разговорите отиват там, но Codex още не я показва като проект.", targets: ["Нов чат", "Един чат", "Един проект"], chatPick: "Избери чат", projectPick: "Избери проект", noTargets: "Codex още няма чатове или проекти.",
     targetHelp: { new: "Всеки разговор е отделен чат.", thread: "Hark отваря този чат преди разговора, така че всички разговори се събират в него.", project: "Hark отваря нов чат в този проект. Проектът трябва да е доверен в Codex." },
     wakeWords: "Ключови думи", closeAfter: "Секунди тишина",
     closeHelp: "Докато Codex търси или мисли, разговорът не се затваря (до 5 минути).", idleClose: "Затваряй след тишина", stopWords: "Фраза за край: ключова дума + една от тези думи", stopOn: "Фраза за край включена", busy: "Codex работи, разговорът остава отворен", chatStop: "„{w}, {s}“ го затваря веднага.", tryChat: "Пробвай: отвори гласов чат",
@@ -68,7 +68,7 @@ const I18N = {
     sendWords: "Write and send", draftWords: "Draft: text stays in the box", 
     recent: "Recent", events: "Events", allLog: "Full activity →", noEvents: "No events yet.",
     cmdEyebrow: "Voice commands", cmdTitle: "What it hears and what it does", cmdNote: "Changes take effect as soon as you save.",
-    chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", chatGoes: "Conversations go to", targets: ["New chat", "One chat", "One project"], chatPick: "Choose a chat", projectPick: "Choose a project", noTargets: "Codex has no chats or projects yet.",
+    chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", chatGoes: "Conversations go to", asst: "Create a personal assistant", asstHelp: "Makes a “Hark Assistant” folder in Documents with AGENTS.md and memory.md, adds it to Codex as a project and sends voice chats there. The assistant remembers between conversations in memory.md.", asstWorking: "Creating the folder and project…", asstReady: "Done: conversations go to {f}", asstNoProject: "The folder {f} is ready and conversations go there, but Codex does not list it as a project yet.", targets: ["New chat", "One chat", "One project"], chatPick: "Choose a chat", projectPick: "Choose a project", noTargets: "Codex has no chats or projects yet.",
     targetHelp: { new: "Every conversation is a separate chat.", thread: "Hark opens this chat before the conversation, so all conversations collect in it.", project: "Hark opens a new chat in this project. The project must be trusted in Codex." },
     wakeWords: "Wake words", closeAfter: "Seconds of silence",
     closeHelp: "While Codex is searching or thinking, the conversation stays open (up to 5 minutes).", idleClose: "Close after silence", stopWords: "Stop phrase: wake word + one of these words", stopOn: "Stop phrase on", busy: "Codex is working, the conversation stays open", chatStop: "“{w}, {s}” closes it at once.", tryChat: "Try it: open voice chat",
@@ -147,11 +147,12 @@ function fixtureApi() {
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.14.2", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.14.2", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.15.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.15.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
+    create_assistant: async () => ({ ok: true, folder: "D:\\Users\\User\\Documents\\Hark Assistant", project: true, trusted: true, settings: { ...settings, chat_target: "project", chat_project: "D:\\Users\\User\\Documents\\Hark Assistant" } }),
     check_updates: async () => ({ status: "new", text: "A new version is available: 0.15.0 — you have 0.14.0", version: "0.15.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.15.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
@@ -280,7 +281,9 @@ function chatTarget() {
     if (cur && !list.some((x) => (thread ? x.id : x.path) === cur)) opts.unshift('<option selected value="' + esc(cur) + '">' + esc(cur) + "</option>");
     select = list.length || cur ? '<select data-key="' + key + '" aria-label="' + pick + '">' + (cur ? "" : '<option value="" selected>' + pick + "</option>") + opts.join("") + "</select>" + err(key) : "<small>" + L.noTargets + "</small>";
   }
-  return '<div class="field"><span class="label">' + L.chatGoes + "</span>" + seg("chat_target", [["new", L.targets[0]], ["thread", L.targets[1]], ["project", L.targets[2]]]) + select + "<small>" + L.targetHelp[t] + "</small></div>";
+  const a = ui.asst;
+  const asst = '<div class="field"><button class="btn btn-small" style="align-self:flex-start" data-action="assistant"' + (a === "working" ? " disabled" : "") + ">" + icon("folder") + L.asst + "</button><small" + (a && a.err ? ' class="error-text"' : "") + ">" + esc(a === "working" ? L.asstWorking : a ? a.text : L.asstHelp) + "</small></div>";
+  return '<div class="field"><span class="label">' + L.chatGoes + "</span>" + seg("chat_target", [["new", L.targets[0]], ["thread", L.targets[1]], ["project", L.targets[2]]]) + select + "<small>" + L.targetHelp[t] + "</small></div>" + asst;
 }
 async function refreshTargets() { if (api.codex_targets) { ui.targets = await api.codex_targets(); if (ui.screen === "commands") render(); } }
 function updatesRow() {
@@ -544,6 +547,16 @@ document.addEventListener("click", async (ev) => {
       const r = await api.install_update();
       if (!r.ok) { ui.installing = false; ui.installError = r.text; render(); }
       break;
+    }
+    case "assistant": {
+      ui.asst = "working"; render();
+      const r = await api.create_assistant();
+      if (r.ok) {
+        ui.saved = clone(r.settings); ui.draft.chat_target = r.settings.chat_target; ui.draft.chat_project = r.settings.chat_project;
+        await refreshTargets();
+        ui.asst = { text: T(r.project ? "asstReady" : "asstNoProject", { f: r.folder }) };
+      } else ui.asst = { err: true, text: r.text };
+      render(); updateSaveBar(); break;
     }
     case "check-updates": {
       ui.updChecking = true; render();

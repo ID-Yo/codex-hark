@@ -271,6 +271,38 @@ class SelfUpdateTests(unittest.TestCase):
             self.assertEqual(Path(exe).read_bytes(), b"new")
 
 
+class AssistantTests(unittest.TestCase):
+    def test_creates_the_files_once_and_trusts_the_folder_once(self):
+        with tempfile.TemporaryDirectory() as d:
+            folder, config = os.path.join(d, "Hark Assistant"), os.path.join(d, "codex", "config.toml")
+            os.makedirs(os.path.dirname(config))
+            Path(config).write_text("model = \"x\"", encoding="utf-8")
+            with patch.object(ww, "codex_config_path", return_value=config):
+                self.assertEqual(ww.create_assistant(folder), (folder, True))
+                Path(folder, "memory.md").write_text("kept", encoding="utf-8")
+                ww.create_assistant(folder)
+            self.assertIn("memory.md", Path(folder, "AGENTS.md").read_text(encoding="utf-8"))
+            self.assertEqual(Path(folder, "memory.md").read_text(encoding="utf-8"), "kept")
+            text = Path(config).read_text(encoding="utf-8")
+            self.assertEqual(text.count("[projects.'" + folder.lower() + "']"), 1)
+            self.assertTrue(text.startswith("model = \"x\"\n"))
+            self.assertTrue(os.path.exists(config + ".hark-backup"))
+            self.assertFalse(ww.trust_codex_folder("C:\\it's", config))
+
+    def test_knows_whether_codex_lists_the_folder_as_a_project(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "state_5.sqlite")
+            con = sqlite3.connect(db)
+            con.executescript("create table threads (id, name, title, cwd, archived, source, recency_at_ms, updated_at_ms);"
+                              "create table projects (id, name, position); create table project_roots (project_id, position, path);"
+                              "insert into projects values ('p', 'Hark Assistant', 0);"
+                              "insert into project_roots values ('p', 0, 'D:\\Docs\\Hark Assistant');")
+            con.commit()
+            con.close()
+            self.assertTrue(ww.codex_has_project("d:\\docs\\hark assistant", db))
+            self.assertFalse(ww.codex_has_project("D:\\Docs\\Other", db))
+
+
 class ValidateSettingsTests(unittest.TestCase):
     def test_defaults_are_valid(self):
         self.assertEqual(ww.validate_settings(ww.DEFAULTS), (ww.DEFAULTS, {}))
