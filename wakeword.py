@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.14.2"
+__version__ = "0.15.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -201,6 +201,8 @@ MESSAGES = {
     "words_unknown": {"bg": ("Моделът за {language} не познава: {words}", "тези думи няма да се разпознават"),
                       "en": ("The {language} model does not know: {words}", "these words will not be recognized")},
     "update_available": {"bg": ("Има нова версия: {version}", "имате {current}"), "en": ("A new version is available: {version}", "you have {current}")},
+    "assistant_ready": {"bg": ("Личният асистент е готов", "{folder}"), "en": ("The personal assistant is ready", "{folder}")},
+    "assistant_no_project": {"bg": ("Папката на асистента е готова, но Codex още не я показва като проект", "{folder}"), "en": ("The assistant folder is ready, but Codex does not list it as a project yet", "{folder}")},
     "update_installing": {"bg": ("Инсталира версия {version}", "Hark ще се рестартира"), "en": ("Installing version {version}", "Hark will restart")},
     "update_failed": {"bg": ("Обновяването не успя", "{error}"), "en": ("The update failed", "{error}")},
     "update_done": {"bg": ("Hark е обновен до {version}", "от {previous}"), "en": ("Hark was updated to {version}", "from {previous}")},
@@ -872,6 +874,80 @@ def codex_targets(db=None):
     except sqlite3.Error as e:
         logging.warning("cannot read the Codex chats: %s", e)
     return out
+
+
+ASSISTANT_NAME = "Hark Assistant"
+ASSISTANT_AGENTS = """# Personal assistant
+
+You are the user's personal assistant. The user talks to you by voice through Codex Hark, so keep answers short
+and easy to listen to, in the language the user speaks.
+
+## Memory
+
+- At the start of every conversation, read memory.md in this folder.
+- When the user tells you something worth keeping (preferences, facts about them, plans, tasks, decisions) or
+  asks you to remember something, add a short dated line to memory.md under the right heading.
+- Keep memory.md short: update or remove outdated lines instead of adding duplicates.
+- Never store passwords, keys, codes or other secrets.
+
+## Workspace
+
+This folder is your workspace. Keep notes and files you create here. Ask before you change anything outside it.
+"""
+ASSISTANT_MEMORY = "# Memory\n\n## About the user\n\n## Preferences\n\n## Ongoing\n\n## Notes\n"
+
+
+def documents_dir():
+    """The user's Documents folder (it may be moved away from the profile)."""
+    buf = ctypes.create_unicode_buffer(260)
+    if ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf) == 0 and buf.value:  # CSIDL_PERSONAL
+        return buf.value
+    return os.path.join(os.path.expanduser("~"), "Documents")
+
+
+def codex_config_path():
+    home = os.environ.get("CODEX_HOME") or os.path.join(os.path.expanduser("~"), ".codex")
+    return os.path.join(home, "config.toml")
+
+
+def trust_codex_folder(folder, path=None):
+    """Mark the folder as trusted in Codex's config.toml (as Codex's own "Trust folder" does), so a voice chat
+    can start there without the trust question. Keeps config.toml.hark-backup. Returns False if it cannot."""
+    path = path or codex_config_path()
+    key = folder.lower()
+    if "'" in key or "\n" in key:
+        return False  # not expressible as a TOML literal key
+    header = f"[projects.'{key}']"
+    text = ""
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+        if header in text:
+            return True
+        shutil.copyfile(path, path + ".hark-backup")
+    else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(("" if not text or text.endswith("\n") else "\n") + f"\n{header}\ntrust_level = \"trusted\"\n")
+    return True
+
+
+def create_assistant(folder=None):
+    """Create the assistant folder with AGENTS.md and memory.md (kept if they exist) and trust it in Codex."""
+    folder = folder or os.path.join(documents_dir(), ASSISTANT_NAME)
+    os.makedirs(folder, exist_ok=True)
+    for name, text in (("AGENTS.md", ASSISTANT_AGENTS), ("memory.md", ASSISTANT_MEMORY)):
+        file = os.path.join(folder, name)
+        if not os.path.exists(file):
+            with open(file, "w", encoding="utf-8") as f:
+                f.write(text)
+    return folder, trust_codex_folder(folder)
+
+
+def codex_has_project(folder, db=None):
+    """Is the folder a project in Codex (its project list)?"""
+    want = os.path.normcase(os.path.normpath(folder))
+    return any(os.path.normcase(os.path.normpath(p["path"])) == want for p in codex_targets(db)["projects"])
 
 
 def chat_target_url(settings):

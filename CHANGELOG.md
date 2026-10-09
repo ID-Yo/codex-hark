@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-09
+
+### Added
+- **Create a personal assistant** (Voice commands > Voice chat): one button makes a `Hark Assistant` folder in Documents with `AGENTS.md` (role and memory rules) and `memory.md`, marks it trusted in Codex (`config.toml`, with a backup), opens it in Codex until it is a project, and sends voice chats there. Existing files are kept.
+
 ## [0.14.2] - 2026-10-09
 
 ### Fixed
