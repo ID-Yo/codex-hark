@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.14.0"
+__version__ = "0.14.1"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -646,10 +646,26 @@ def download_model(lang, progress=None):
     return model_dir(lang)
 
 
+_instance = None  # the single-instance mutex handle
+
+
 def acquire_single_instance():
     """Return False if another listener (exe or script) already runs."""
-    ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\CodexHark")
-    return ctypes.windll.kernel32.GetLastError() != 183
+    global _instance
+    handle = ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\CodexHark")
+    if ctypes.windll.kernel32.GetLastError() == 183:
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return False
+    _instance = handle
+    return True
+
+
+def release_single_instance():
+    """Let another instance start (the new version after an update)."""
+    global _instance
+    if _instance:
+        ctypes.windll.kernel32.CloseHandle(_instance)
+        _instance = None
 
 
 # Codex has no default key for these commands on Windows, so Hark checks that they are set (keybindings.json).
