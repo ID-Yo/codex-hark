@@ -47,7 +47,7 @@ class HeardTests(unittest.TestCase):
 
     def test_grammar_has_every_word_of_the_language(self):
         words = json.loads(ww.grammar(EN))
-        self.assertEqual(set(words), {"codex", "chat", "write", "draft", "stop", "[unk]", *EN["decoys"]})
+        self.assertEqual(set(words), {"codex", "write", "draft", "stop", "[unk]", *EN["decoys"]})
 
 
 class WakePhraseTests(unittest.TestCase):
@@ -296,29 +296,6 @@ class SettingsTests(unittest.TestCase):
             ww.load_settings(self.path, env={})
 
 
-class ChatCommandTests(unittest.TestCase):
-    def test_chat_words_are_a_second_target_next_to_the_wake_words(self):
-        res = result(("chat", 1.0), ("write", 0.9))
-        self.assertEqual(ww.heard(res, EN, 0.5, "chat_words"), ("chat", "write", 1.0))
-        self.assertEqual(ww.heard(res, EN, 0.5)[0], "")
-        self.assertEqual(ww.heard(result(("codex", 1.0)), EN, 0.5, "chat_words")[0], "")
-        self.assertEqual(ww.heard(result(("чат", 1.0), ("стоп", 1.0)), BG, 0.5, "chat_words"), ("чат", "стоп", 1.0))
-
-    def test_chat_words_can_be_a_phrase_and_the_chat_target_is_off_by_default(self):
-        words = {**EN, "chat_words": ["hey chat"]}
-        self.assertEqual(ww.heard(result(("hey", 1.0), ("chat", 1.0)), words, 0.5, "chat_words")[0], "hey chat")
-        self.assertIn("hey chat", json.loads(ww.grammar(words)))
-        self.assertIs(ww.DEFAULTS["chatgpt_enabled"], False)
-
-    def test_chat_words_are_checked_like_the_other_lists(self):
-        settings, errors = ww.validate_settings(langs(chat_words=["  Хей  Чат "]))
-        self.assertEqual((settings["languages"]["bg"]["chat_words"], errors), (["хей чат"], {}))
-        self.assertEqual(ww.validate_settings(langs(chat_words=[]))[1], {})
-        known = lambda lang, w: w != "чатик"  # noqa: E731
-        self.assertIn("чатик", ww.validate_settings(langs(chat_words=["чатик"]), known_word=known)[1]["languages.bg.chat_words"])
-        self.assertIn("languages.bg.stop_words", ww.validate_settings(langs(stop_words=["чат"]))[1])
-
-
 class CodexKeysTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -409,6 +386,27 @@ class WindowSizeTests(unittest.TestCase):
         for url in ("http://ivanyosifov.com", "https://ivanyosifov.com.evil.example", "file:///C:/Windows/notepad.exe",
                     "https://github.com/ID-Yo/other", "", None):
             self.assertFalse(ww.about_link(url), url)
+
+
+class AddedLanguageTests(unittest.TestCase):
+    def test_an_added_language_is_kept_with_its_words_and_can_be_removed(self):
+        raw = {"languages": {"bg": BG, "en": EN, "de": ww.language_defaults("de")}}
+        settings, errors = ww.validate_settings(raw)
+        self.assertEqual((list(settings["languages"]), errors), (["bg", "en", "de"], {}))
+        self.assertEqual(settings["languages"]["de"]["send_words"], ["schreib"])
+        self.assertEqual(list(ww.validate_settings({"languages": {"bg": BG, "en": EN}})[0]["languages"]), ["bg", "en"])
+
+    def test_bulgarian_and_english_stay_and_unknown_codes_are_dropped(self):
+        settings, errors = ww.validate_settings({"languages": {"xx": {"enabled": True}, "uk": {"wake_words": ["кодекс"]}}})
+        self.assertEqual((list(settings["languages"]), errors), (["bg", "en", "uk"], {}))
+        self.assertEqual(settings["languages"]["uk"]["stop_words"], ww.ADDED_LANGUAGES["uk"]["stop_words"])
+
+    def test_every_added_language_has_a_model_a_name_and_valid_words(self):
+        for code in ww.ADDED_LANGUAGES:
+            self.assertIn(code, ww.MODELS)
+            self.assertTrue(all(code in names for names in ww.LANGUAGE_NAMES.values()), code)
+            _, errors = ww.validate_settings({"languages": {"bg": BG, "en": EN, code: ww.language_defaults(code)}})
+            self.assertEqual(errors, {}, code)
 
 
 if __name__ == "__main__":

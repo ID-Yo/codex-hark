@@ -66,10 +66,6 @@ The speech model recognizes only words from its own vocabulary. While you type, 
 
 Hark needs two keys in Codex: the **Voice Chat hotkey** (command `realtimeVoice`, `Alt+Z` by default) and the **Dictation shortcut** (`globalDictationHold`, `Alt+X`). Codex has no default for either on Windows. On the first start Hark reads `%USERPROFILE%\.codex\keybindings.json` (or `CODEX_HOME`) and adds the ones that are missing; a key you chose yourself is kept and Hark presses that one. The old file is saved as `keybindings.json.hark-backup`, and if a key is already used by another command Hark leaves it and says so. Restart Codex after Hark has added keys. **Settings > Codex shortcuts > Check** runs the check again.
 
-## ChatGPT Classic commands (optional)
-
-Turn on **ChatGPT Classic** in Voice commands to drive the [ChatGPT Classic](https://chatgpt.com/features/desktop) desktop app by voice, for ordinary conversations: "Chat" starts a voice conversation, "Chat, write" starts dictation (the text stays in the message box for you to send) and "Chat, stop" ends the conversation. Hark starts ChatGPT Classic when it is not running and presses its buttons through Windows UI Automation (`Start Voice`, `End Voice`, `Start dictation`, `Submit dictation`). It is off by default because "chat" is a common word. ChatGPT Classic must be installed and signed in.
-
 ## Languages
 
 Each language has its own small offline [Vosk](https://alphacephei.com/vosk/) model and its own words. All enabled languages listen at the same time.
@@ -78,6 +74,8 @@ Each language has its own small offline [Vosk](https://alphacephei.com/vosk/) mo
 |---|---|---|
 | Bulgarian | `vosk-model-small-ru-0.22` (there is no Bulgarian Vosk model; the Russian one also understands "Codex"), bundled in the exe | 45 MB |
 | English | `vosk-model-small-en-us-0.15`, downloaded on first use to `%APPDATA%\CodexHark\models` and checked by SHA256 | 41 MB |
+
+More languages can be added in **Voice commands > Recognition languages > Add language**: German, French, Spanish, Italian, Polish, Dutch and Ukrainian (small Vosk models of 39 to 74 MB). Each starts with words that its model knows, for example "Codex, schreib" in German or „Кодекс, пиши“ in Ukrainian; change them like any other words. The model is downloaded and checked by SHA256 after you save. An added language can be removed again; Bulgarian and English can only be switched off.
 
 Each enabled language adds about 200 MB of memory; CPU stays under 1%.
 

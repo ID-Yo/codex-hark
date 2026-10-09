@@ -16,7 +16,7 @@ const I18N = {
     hotkey: "Voice chat hotkey {voice}", codexOpen: "Отворен", codexClosed: "Не е отворен", defaultMic: "Микрофон по подразбиране", levelLine: "Ниво {l} · праг {t}",
     say: "Кажете", howTo: "Как се ползва", chatHelp: "Отваря гласов чат. Затваря се след {s} s тишина.", chatOff: "Гласовият чат е изключен.",
     dictHelp: "Диктовка в текущия чат. След {s} s тишина текстът се изпраща.", draftHelp: "Диктовка в текущия чат. Текстът остава в полето за преглед.", stopHelp: "Затваря гласовия чат веднага.", dictOff: "Диктовката е изключена.",
-    recLangs: "Езици за разпознаване", recHelp: "Всички включени езици слушат едновременно. Моделите се изтеглят при първото включване.", langNames: { bg: "Български", en: "English" }, langSub: { bg: "руски модел, разбира и „Codex“", en: "американски английски" },
+    recLangs: "Езици за разпознаване", recHelp: "Всички включени езици слушат едновременно. Моделите се изтеглят при първото включване.", langNames: { bg: "Български", en: "English", de: "Deutsch", fr: "Français", es: "Español", it: "Italiano", pl: "Polski", nl: "Nederlands", uk: "Українська" }, langSub: { bg: "руски модел, разбира и „Codex“", en: "американски английски" },
     modelReady: "Готов", modelMissing: "Не е изтеглен", modelDownloading: "Изтегля се {p}%", modelError: "Неуспешно изтегляне", download: "Изтегли", wordsFor: "Думи за",
     sendWords: "Пиши и изпрати", draftWords: "Чернова: текстът остава в полето", 
     recent: "Последни", events: "Събития", allLog: "Целият дневник →", noEvents: "Още няма събития.",
@@ -30,8 +30,7 @@ const I18N = {
     aboutTitle: "За приложението", aboutText: "Hark слуша на вашия компютър за ключова дума и управлява Codex Desktop с глас: отваря гласов чат и диктува. Разпознаването е локално, аудиото не се записва и не излиза навън.", aboutAuthor: "Автор: Иван Йосифов",
     aboutLegal: "Лиценз MIT. Неофициален проект, не е свързан с OpenAI; „Codex“ е име на продукт на OpenAI.",
     keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери",
-    chatgptTitle: "ChatGPT Classic", chatgptSub: "Разговор и диктовка в ChatGPT Classic", chatgptOn: "ChatGPT включен", chatgptWords: "Ключови думи за ChatGPT",
-    chatgptHelp: "„Чат“ започва гласов разговор, „Чат, пиши“ — диктовка (текстът остава в полето за съобщение), „Чат, стоп“ — край на разговора. Нужен е ChatGPT Classic, влязъл в профила; Hark го стартира, ако не работи.",
+    addLang: "Добави език", removeLang: "Премахни", addLangHelp: "Моделът се изтегля след „Запази“.",
     checking: "Проверка…", wordOk: "Моделът познава: {w}", noModel: "Моделът за този език още не е изтеглен — думите не могат да се проверят.",
     wordUnknown: "Моделът не познава: {w}. Опитайте друга дума или правопис, който звучи същото.", wordUnknownRu: "Моделът не познава: {w}. Българският слот ползва руски модел — пишете думата с руски правопис.",
     oneWord: "Тук се допуска само една дума.", tooLong: "Фразата може да е най-много от {n} думи.", phraseHelp: "Може да е и фраза до {n} думи, напр. „хей кодекс“.", chipUnknown: "Моделът не познава: {w}. Тези думи няма да се разпознават.",
@@ -61,7 +60,7 @@ const I18N = {
     hotkey: "Voice chat hotkey {voice}", codexOpen: "Open", codexClosed: "Not open", defaultMic: "Default microphone", levelLine: "Level {l} · threshold {t}",
     say: "Say", howTo: "How to use it", chatHelp: "Opens voice chat. Closes after {s} s of silence.", chatOff: "Voice chat is turned off.",
     dictHelp: "Dictation in the current chat. After {s} s of silence the text is sent.", draftHelp: "Dictation in the current chat. The text stays in the box for review.", stopHelp: "Closes the voice chat at once.", dictOff: "Dictation is turned off.",
-    recLangs: "Recognition languages", recHelp: "All enabled languages listen at the same time. Models are downloaded when first enabled.", langNames: { bg: "Български", en: "English" }, langSub: { bg: "Russian model, also hears “Codex”", en: "US English" },
+    recLangs: "Recognition languages", recHelp: "All enabled languages listen at the same time. Models are downloaded when first enabled.", langNames: { bg: "Български", en: "English", de: "Deutsch", fr: "Français", es: "Español", it: "Italiano", pl: "Polski", nl: "Nederlands", uk: "Українська" }, langSub: { bg: "Russian model, also hears “Codex”", en: "US English" },
     modelReady: "Ready", modelMissing: "Not downloaded", modelDownloading: "Downloading {p}%", modelError: "Download failed", download: "Download", wordsFor: "Words for",
     sendWords: "Write and send", draftWords: "Draft: text stays in the box", 
     recent: "Recent", events: "Events", allLog: "Full activity →", noEvents: "No events yet.",
@@ -75,8 +74,7 @@ const I18N = {
     aboutTitle: "About", aboutText: "Hark listens on your computer for a wake word and controls Codex Desktop by voice: it opens voice chat and dictates. Recognition is local; audio is never recorded or sent anywhere.", aboutAuthor: "Author: Ivan Yosifov",
     aboutLegal: "MIT License. Unofficial project, not affiliated with OpenAI; “Codex” is the name of an OpenAI product.",
     keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check",
-    chatgptTitle: "ChatGPT Classic", chatgptSub: "Conversation and dictation in ChatGPT Classic", chatgptOn: "ChatGPT on", chatgptWords: "ChatGPT wake words",
-    chatgptHelp: "“Chat” starts a voice conversation, “Chat, write” starts dictation (the text stays in the message box), “Chat, stop” ends the conversation. Needs ChatGPT Classic signed in; Hark starts it if it is not running.",
+    addLang: "Add language", removeLang: "Remove", addLangHelp: "The model is downloaded after you save.",
     checking: "Checking…", wordOk: "The model knows: {w}", noModel: "The model for this language is not downloaded yet, so the words cannot be checked.",
     wordUnknown: "The model does not know: {w}. Try another word or a spelling that sounds the same.", wordUnknownRu: "The model does not know: {w}. The Bulgarian slot uses a Russian model, so write the word in Russian spelling.",
     oneWord: "Only a single word is allowed here.", tooLong: "A phrase can have at most {n} words.", phraseHelp: "Can also be a phrase of up to {n} words, e.g. “hey codex”.", chipUnknown: "The model does not know: {w}. These words will not be recognized.",
@@ -132,22 +130,22 @@ function fixtureApi() {
   const defaults = {
     chat_enabled: true, dictation_enabled: true, min_conf: 0.5, idle_seconds: 10,
     dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
-    mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true, chatgpt_enabled: false,
+    mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
     languages: {
-      bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], chat_words: ["чат"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
-      en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], chat_words: ["chat"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
+      bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
+      en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
     },
   };
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.7.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.7.0", lang, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.8.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.8.0", lang, added_languages: { de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
-    models: async () => [{ code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }],
+    models: async () => [{ code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
     download_model: async () => [], suggest_threshold: async () => 290, open_folder: async () => true, copy: async () => true,
     open_url: async (url) => { window.open(url, "_blank"); return true; },
     check_keys: async () => ({ status: "ok", text: "Codex shortcuts are set — voice chat Alt+Z, dictation Alt+X", hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
@@ -209,7 +207,7 @@ function setP(obj, path, value) { const keys = path.split("."); const last = key
 const MAX_PHRASE = 3;
 const normWord = (s) => s.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
 const langOfKey = (key) => key.split(".")[1];
-const isWake = (key) => /\.(wake|chat)_words$/.test(key);
+const isWake = (key) => key.endsWith(".wake_words");
 let checkTimer = 0, checkSeq = 0;
 function checkLine() {
   const c = ui.check;
@@ -304,15 +302,17 @@ const screens = {
   commands() {
     const lang = ui.wordsLang;
     const w = "languages." + lang + ".";
-    const models = ui.models || [];
+    const models = (ui.models || []).filter((m) => ui.draft.languages[m.code]);
+    const addable = (ui.models || []).filter((m) => !ui.draft.languages[m.code] && ui.meta.added_languages?.[m.code]);
     const modelRow = (m) => {
       const status = m.installed ? '<span class="status-text good"><span class="dot"></span>' + L.modelReady + "</span>"
         : m.state === "downloading" ? '<span class="status-text muted">' + T("modelDownloading", { p: Math.round(m.progress * 100) }) + "</span>"
         : '<span class="status-text ' + (m.state === "error" ? "bad" : "muted") + '">' + (m.state === "error" ? L.modelError : L.modelMissing) + '</span><button class="btn btn-small" data-action="download" data-lang="' + m.code + '">' + L.download + "</button>";
-      return '<div class="set"><div><strong>' + L.langNames[m.code] + "</strong><small>" + L.langSub[m.code] + " · " + m.model + " · " + m.size_mb + " MB</small>" + (m.error ? '<span class="error-text">' + esc(m.error) + "</span>" : "") + '</div><div class="steps">' + status + toggle("languages." + m.code + ".enabled", L.langNames[m.code]) + "</div></div>";
+      return '<div class="set"><div><strong>' + L.langNames[m.code] + "</strong><small>" + (L.langSub[m.code] ? L.langSub[m.code] + " · " : "") + m.model + " · " + m.size_mb + " MB</small>" + (m.error ? '<span class="error-text">' + esc(m.error) + "</span>" : "") + '</div><div class="steps">' + status + toggle("languages." + m.code + ".enabled", L.langNames[m.code]) + (ui.meta.added_languages?.[m.code] ? '<button class="btn btn-small" data-action="remove-lang" data-lang="' + m.code + '">' + L.removeLang + "</button>" : "") + "</div></div>";
     };
     return '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + "</div><h1>" + L.cmdTitle + "</h1><small>" + L.cmdNote + "</small></div></div>" +
-      '<section class="card" style="gap:0"><div><h2>' + L.recLangs + "</h2><small>" + L.recHelp + "</small>" + err("languages") + "</div>" + models.map(modelRow).join("") + "</section>" +
+      '<section class="card" style="gap:0"><div><h2>' + L.recLangs + "</h2><small>" + L.recHelp + "</small>" + err("languages") + "</div>" + models.map(modelRow).join("") +
+      (addable.length ? '<div class="set"><div><strong>' + L.addLang + "</strong><small>" + L.addLangHelp + '</small></div><div class="steps"><select id="add-lang" aria-label="' + L.addLang + '" style="width:auto">' + addable.map((m) => '<option value="' + m.code + '">' + L.langNames[m.code] + " · " + m.size_mb + " MB</option>").join("") + '</select><button class="btn btn-small" data-action="add-lang">' + L.addLang + "</button></div></div>" : "") + "</section>" +
       '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + "</button>").join("") + "</div></div>" +
       '<div class="grid2"><section class="card"><div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + "</span><div><h2>" + L.chat + "</h2><small>" + T("chatSub", { voice: voiceKey() }) + "</small></div></div>" + toggle("chat_enabled", L.chatOn) + "</div>" +
       chips(w + "wake_words", L.wakeWords) +
@@ -323,8 +323,6 @@ const screens = {
       '<button class="btn btn-small" style="align-self:flex-start" data-action="test-chat">' + icon("play") + L.tryChat + "</button></section>" +
       '<section class="card"><div class="head"><div class="head-title"><span class="mark dict">' + icon("pen") + "</span><div><h2>" + L.dict + "</h2><small>" + L.dictSub + "</small></div></div>" + toggle("dictation_enabled", L.dictOn) + "</div>" +
       chips(w + "send_words", L.sendWords) + chips(w + "draft_words", L.draftWords) + range("dictation_idle_seconds", L.dictEnd, 1, " s") + "</section></div>" +
-      '<section class="card"><div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + "</span><div><h2>" + L.chatgptTitle + "</h2><small>" + L.chatgptSub + "</small></div></div>" + toggle("chatgpt_enabled", L.chatgptOn) + "</div>" +
-      chips(w + "chat_words", L.chatgptWords) + "<small>" + L.chatgptHelp + "</small></section>" +
       '<section class="card"><div><h2>' + L.sensitivity + "</h2><small>" + L.sensHelp + "</small></div>" +
       range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
       "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>" + saveBar();
@@ -492,6 +490,12 @@ document.addEventListener("click", async (ev) => {
     case "discard": ui.draft = clone(ui.saved); ui.errors = {}; ui.calib = null; ui.notice = null; render(); break;
     case "test-chat": await api.test_chat(); break;
     case "download": ui.models = await api.download_model(d.lang); render(); break;
+    case "add-lang": {
+      const code = $("#add-lang").value;
+      ui.draft.languages[code] = clone(ui.meta.added_languages[code]); ui.wordsLang = code; ui.notice = null; render(); updateSaveBar(); break;
+    }
+    case "remove-lang":
+      delete ui.draft.languages[d.lang]; if (ui.wordsLang === d.lang) ui.wordsLang = "bg"; ui.notice = null; render(); updateSaveBar(); break;
     case "calibrate": await calibrate(); break;
     case "check-keys": {
       const r = await api.check_keys(); ui.keysNote = r.text; ui.meta.hotkeys = r.hotkeys; render(); renderLive(); break;

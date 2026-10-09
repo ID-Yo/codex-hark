@@ -4,12 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-09
+
+### Added
+- Add a recognition language in Voice commands: German, French, Spanish, Italian, Polish, Dutch or Ukrainian. Each comes with words its model knows; the model is downloaded and checked after you save, and an added language can be removed again.
+
+### Removed
+- The ChatGPT Classic commands from 0.7.0. ChatGPT voice uses a model and tokens just like Codex, so they added nothing. Old settings for them are ignored.
+
 ## [0.7.0] - 2026-10-09
 
 ### Added
 - About card in Settings: description, version, author and the link to https://IvanYosifov.com.
 - On the first start Hark checks that Codex has keys for voice chat and dictation (`realtimeVoice` and `globalDictationHold` in `keybindings.json`) and adds the missing ones; a key you chose is kept and used. Settings has a button to run the check again.
-- Optional ChatGPT Classic commands (off by default): "Chat" starts a voice conversation, "Chat, write" starts dictation, "Chat, stop" ends the conversation.
 
 ### Changed
 - The window starts smaller and always fits the screen (about 880x590 on a 1280x720 screen).

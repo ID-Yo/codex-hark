@@ -7,6 +7,7 @@ Codex Hark is released under the MIT License (see [LICENSE](LICENSE)). The relea
 | Vosk (`vosk`) | 0.3.45 | Apache-2.0 | Offline speech recognition |
 | Vosk model `vosk-model-small-ru-0.22` | - | Apache-2.0 | Bundled; license from the [Vosk models page](https://alphacephei.com/vosk/models) |
 | Vosk model `vosk-model-small-en-us-0.15` | - | Apache-2.0 | Downloaded on demand; same source |
+| Vosk models `vosk-model-small-de-0.15`, `-fr-0.22`, `-es-0.42`, `-it-0.22`, `-pl-0.22`, `-nl-0.22`, `-uk-v3-nano` | - | Apache-2.0 | Downloaded only when the language is added; same source |
 | sounddevice | 0.5.6 | MIT | Includes PortAudio (MIT) binaries; the ASIO-enabled builds (Steinberg ASIO API) that come with the wheel are removed at build time and are not distributed |
 | NumPy | 2.5.3 | BSD-3-Clause and others (see package) | |
 | pycaw | 20260927 | MIT | Audio session meters |
