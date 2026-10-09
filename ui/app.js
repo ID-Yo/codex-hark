@@ -107,7 +107,7 @@ const ui = {
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
-  filter: "all", query: "", calib: null, adding: null, wordsLang: "bg", models: null, check: null, unknown: {},
+  filter: "all", query: "", calib: null, adding: null, wordsLang: "en", models: null, check: null, unknown: {},
 };
 
 // ---------- API ----------
@@ -132,20 +132,20 @@ function fixtureApi() {
     dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
     mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
     languages: {
-      bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
       en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
+      bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
     },
   };
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.8.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.8.0", lang, added_languages: { de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.9.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.9.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
-    models: async () => [{ code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
+    models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
     download_model: async () => [], suggest_threshold: async () => 290, open_folder: async () => true, copy: async () => true,
     open_url: async (url) => { window.open(url, "_blank"); return true; },
     check_keys: async () => ({ status: "ok", text: "Codex shortcuts are set — voice chat Alt+Z, dictation Alt+X", hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
@@ -275,6 +275,19 @@ function saveBarInner() {
 const saveBar = () => '<div id="savebar-slot">' + saveBarInner() + "</div>";
 function updateSaveBar() { const slot = $("#savebar-slot"); if (slot) slot.innerHTML = saveBarInner(); }
 
+// Recognition languages: switch on/off, download, add and remove; lives in Settings.
+function languagesCard() {
+  const models = (ui.models || []).filter((m) => ui.draft.languages[m.code]);
+  const addable = (ui.models || []).filter((m) => !ui.draft.languages[m.code] && ui.meta.added_languages?.[m.code]);
+  const modelRow = (m) => {
+    const status = m.installed ? '<span class="status-text good"><span class="dot"></span>' + L.modelReady + "</span>"
+      : m.state === "downloading" ? '<span class="status-text muted">' + T("modelDownloading", { p: Math.round(m.progress * 100) }) + "</span>"
+      : '<span class="status-text ' + (m.state === "error" ? "bad" : "muted") + '">' + (m.state === "error" ? L.modelError : L.modelMissing) + '</span><button class="btn btn-small" data-action="download" data-lang="' + m.code + '">' + L.download + "</button>";
+    return '<div class="set"><div><strong>' + L.langNames[m.code] + "</strong><small>" + (L.langSub[m.code] ? L.langSub[m.code] + " · " : "") + m.model + " · " + m.size_mb + " MB</small>" + (m.error ? '<span class="error-text">' + esc(m.error) + "</span>" : "") + '</div><div class="steps">' + status + toggle("languages." + m.code + ".enabled", L.langNames[m.code]) + (ui.meta.added_languages?.[m.code] ? '<button class="btn btn-small" data-action="remove-lang" data-lang="' + m.code + '">' + L.removeLang + "</button>" : "") + "</div></div>";
+  };
+  return '<section class="card" style="gap:0"><div><h2>' + L.recLangs + "</h2><small>" + L.recHelp + "</small>" + err("languages") + "</div>" + models.map(modelRow).join("") +
+      (addable.length ? '<div class="set"><div><strong>' + L.addLang + "</strong><small>" + L.addLangHelp + '</small></div><div class="steps"><select id="add-lang" aria-label="' + L.addLang + '" style="width:auto">' + addable.map((m) => '<option value="' + m.code + '">' + L.langNames[m.code] + " · " + m.size_mb + " MB</option>").join("") + '</select><button class="btn btn-small" data-action="add-lang">' + L.addLang + "</button></div></div>" : "") + "</section>";
+}
 // ---------- screens ----------
 const screens = {
   home() {
@@ -283,7 +296,7 @@ const screens = {
     const recent = ui.events.slice(-3).reverse();
     const s = ui.draft;
     const on = Object.entries(s.languages).filter(([, w]) => w.enabled);
-    const wake = cap((on[0] || ["", s.languages.bg])[1].wake_words[0]);
+    const wake = cap((on[0] || ["", s.languages.en])[1].wake_words[0]);
     const say = (list) => on.filter(([, w]) => !list || w[list].length).map(([, w]) => quote(cap(w.wake_words[0]) + (list ? ", " + w[list][0] : ""))).join(" · ");
     const phrase = (cls, ic, list, help) => (say(list) ? '<div class="phrase"><span class="mark ' + cls + '">' + icon(ic) + "</span><div><strong>" + esc(say(list)) + "</strong><br><small>" + help + "</small></div></div>" : "");
     return '<div class="intro"><div><div class="eyebrow">' + L.stateEyebrow + "</div><h1>" + (live.paused ? L.onPause : esc(T("ready", { w: wake }))) + "</h1><small>" + L.localNote + "</small></div>" +
@@ -302,17 +315,7 @@ const screens = {
   commands() {
     const lang = ui.wordsLang;
     const w = "languages." + lang + ".";
-    const models = (ui.models || []).filter((m) => ui.draft.languages[m.code]);
-    const addable = (ui.models || []).filter((m) => !ui.draft.languages[m.code] && ui.meta.added_languages?.[m.code]);
-    const modelRow = (m) => {
-      const status = m.installed ? '<span class="status-text good"><span class="dot"></span>' + L.modelReady + "</span>"
-        : m.state === "downloading" ? '<span class="status-text muted">' + T("modelDownloading", { p: Math.round(m.progress * 100) }) + "</span>"
-        : '<span class="status-text ' + (m.state === "error" ? "bad" : "muted") + '">' + (m.state === "error" ? L.modelError : L.modelMissing) + '</span><button class="btn btn-small" data-action="download" data-lang="' + m.code + '">' + L.download + "</button>";
-      return '<div class="set"><div><strong>' + L.langNames[m.code] + "</strong><small>" + (L.langSub[m.code] ? L.langSub[m.code] + " · " : "") + m.model + " · " + m.size_mb + " MB</small>" + (m.error ? '<span class="error-text">' + esc(m.error) + "</span>" : "") + '</div><div class="steps">' + status + toggle("languages." + m.code + ".enabled", L.langNames[m.code]) + (ui.meta.added_languages?.[m.code] ? '<button class="btn btn-small" data-action="remove-lang" data-lang="' + m.code + '">' + L.removeLang + "</button>" : "") + "</div></div>";
-    };
     return '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + "</div><h1>" + L.cmdTitle + "</h1><small>" + L.cmdNote + "</small></div></div>" +
-      '<section class="card" style="gap:0"><div><h2>' + L.recLangs + "</h2><small>" + L.recHelp + "</small>" + err("languages") + "</div>" + models.map(modelRow).join("") +
-      (addable.length ? '<div class="set"><div><strong>' + L.addLang + "</strong><small>" + L.addLangHelp + '</small></div><div class="steps"><select id="add-lang" aria-label="' + L.addLang + '" style="width:auto">' + addable.map((m) => '<option value="' + m.code + '">' + L.langNames[m.code] + " · " + m.size_mb + " MB</option>").join("") + '</select><button class="btn btn-small" data-action="add-lang">' + L.addLang + "</button></div></div>" : "") + "</section>" +
       '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + "</button>").join("") + "</div></div>" +
       '<div class="grid2"><section class="card"><div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + "</span><div><h2>" + L.chat + "</h2><small>" + T("chatSub", { voice: voiceKey() }) + "</small></div></div>" + toggle("chat_enabled", L.chatOn) + "</div>" +
       chips(w + "wake_words", L.wakeWords) +
@@ -363,14 +366,15 @@ const screens = {
       '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
       '<div class="set"><div><strong>' + L.notifications + "</strong><small>" + L.notificationsHelp + "</small></div>" + toggle("notifications", L.notifications) + "</div>" +
       '<div class="set"><div><strong>' + L.beep + "</strong><small>" + L.beepHelp + "</small></div>" + toggle("beep", L.beep) + "</div>" +
-      '<div class="set"><div><strong>' + L.language + "</strong></div>" + seg("language", [["bg", L.languages[0]], ["en", L.languages[1]], ["auto", L.languages[2]]]) + "</div>" +
+      '<div class="set"><div><strong>' + L.language + "</strong></div>" + seg("language", [["en", L.languages[1]], ["bg", L.languages[0]], ["auto", L.languages[2]]]) + "</div>" +
       '<div class="set"><div><strong>' + L.theme + "</strong></div>" + seg("theme", [["light", L.themes[0]], ["dark", L.themes[1]], ["system", L.themes[2]]]) + "</div>" +
       '<div class="set"><div><strong>' + L.keysTitle + "</strong><small>" + esc(ui.keysNote || L.keysHelp) + '</small></div><button class="btn btn-small" data-action="check-keys">' + L.keysCheck + "</button></div></section>" +
       '<section class="card"><span class="label">' + L.aboutTitle + '</span><div class="head-title"><img class="app-icon" src="icon.png" alt=""><div><h2>' + L.title + " " + esc(m.version) + "</h2><small>" + L.aboutText + "</small></div></div>" +
       '<div class="links"><span>' + L.aboutAuthor + '</span><a class="link" href="https://ivanyosifov.com" data-url="https://ivanyosifov.com">IvanYosifov.com</a><a class="link" href="https://github.com/ID-Yo/codex-hark" data-url="https://github.com/ID-Yo/codex-hark">GitHub</a></div><small>' + L.aboutLegal + "</small>" +
       '<div class="alert">' + icon("info") + L.localModel + "</div>" +
       '<div class="steps"><button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
-      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>";
+      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>" +
+      languagesCard() + (dirty() ? saveBar() : "");
   },
 };
 
@@ -419,9 +423,9 @@ async function poll() {
       if (ui.screen === "home" || (ui.screen === "activity" && document.activeElement?.id !== "query")) render();
     } else if (changed && ui.screen === "home") render();
     if (ui.events.length) ui.lastId = ui.events[ui.events.length - 1].id;
-    if (ui.screen === "commands" || (ui.models || []).some((m) => m.state === "downloading")) {
+    if (["commands", "settings"].includes(ui.screen) || (ui.models || []).some((m) => m.state === "downloading")) {
       const models = await api.models();
-      if (JSON.stringify(models) !== JSON.stringify(ui.models)) { ui.models = models; if (ui.screen === "commands" && !document.activeElement?.matches("input[type=range]")) render(); }
+      if (JSON.stringify(models) !== JSON.stringify(ui.models)) { ui.models = models; if (["commands", "settings"].includes(ui.screen) && !document.activeElement?.matches("input[type=range]")) render(); }
     }
     renderLive();
   } catch (e) { console.error(e); }
@@ -495,7 +499,7 @@ document.addEventListener("click", async (ev) => {
       ui.draft.languages[code] = clone(ui.meta.added_languages[code]); ui.wordsLang = code; ui.notice = null; render(); updateSaveBar(); break;
     }
     case "remove-lang":
-      delete ui.draft.languages[d.lang]; if (ui.wordsLang === d.lang) ui.wordsLang = "bg"; ui.notice = null; render(); updateSaveBar(); break;
+      delete ui.draft.languages[d.lang]; if (ui.wordsLang === d.lang) ui.wordsLang = "en"; ui.notice = null; render(); updateSaveBar(); break;
     case "calibrate": await calibrate(); break;
     case "check-keys": {
       const r = await api.check_keys(); ui.keysNote = r.text; ui.meta.hotkeys = r.hotkeys; render(); renderLive(); break;
@@ -561,7 +565,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme
   ui.draft = clone(ui.meta.settings);
   ui.models = await api.models();
   setLanguage(ui.meta.lang);
-  if (ui.draft.languages[ui.lang]) ui.wordsLang = ui.lang;
+  ui.wordsLang = ui.draft.languages[ui.lang] ? ui.lang : "en";
   applyTheme();
   ui.live = await api.state(0);
   ui.events = ui.live.events.slice(-1000);

@@ -50,7 +50,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -63,17 +63,18 @@ if not os.path.exists(DATA_DIR) and os.path.isdir(LEGACY_DATA_DIR):
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 LOG_PATH = os.path.join(DATA_DIR, "wakeword.log")
 EVENTS_PATH = os.path.join(DATA_DIR, "events.jsonl")
-MODEL_NAME = "vosk-model-small-ru-0.22"
+MODEL_NAME = "vosk-model-small-en-us-0.15"  # bundled in the exe; every other language is downloaded
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Recognition languages: a small Vosk model each; commands are the wake word plus one word after it.
 MODELS = {
+    # English is the base language: bundled in the exe, it can be switched off but not removed.
+    "en": {"name": "vosk-model-small-en-us-0.15", "size_mb": 41,
+           "sha256": "30F26242C4EB449F948E42CB302DD7A686CB29A3423A8367F99FF41780942498"},
+    # Languages the user can add in Settings; all small Vosk models under Apache-2.0.
     # No Bulgarian Vosk model exists; the Russian one hears "Кодекс", "пиши", "стоп" and English "Codex".
     "bg": {"name": "vosk-model-small-ru-0.22", "size_mb": 45,
            "sha256": "961D5FF98A17F4AA6DE69864D0AA71FA5BAC682301D2B5D17A3F24C5C99A46D4"},
-    "en": {"name": "vosk-model-small-en-us-0.15", "size_mb": 41,
-           "sha256": "30F26242C4EB449F948E42CB302DD7A686CB29A3423A8367F99FF41780942498"},
-    # Languages the user can add in Voice commands; all small Vosk models under Apache-2.0.
     "de": {"name": "vosk-model-small-de-0.15", "size_mb": 45,
            "sha256": "B7E53C90B1F0A38456F4CD62B366ECD58803CD97CD42B06438E2C131713D5E43"},
     "fr": {"name": "vosk-model-small-fr-0.22", "size_mb": 41,
@@ -99,6 +100,15 @@ LANGUAGE_NAMES = {
 }
 # Starting words of an added language; every word is in the vocabulary of its model (checked 2026-10-09).
 ADDED_LANGUAGES = {
+    "bg": {
+        # "кодекс" also matches English "Codex"; "кодекса" covers "Кодекс, отвори...".
+        "wake_words": ["кодекс", "кодекса"],
+        "send_words": ["пиши"],  # dictate, then send to the agent
+        "draft_words": ["чернова"],  # dictate, then leave the text in the message box
+        "stop_words": ["стоп", "край"],  # end a voice chat at once
+        # Similar-sounding words give the recognizer somewhere else to put near misses.
+        "decoys": ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"],
+    },
     "de": {"wake_words": ["codex", "kodex"], "send_words": ["schreib"], "draft_words": ["entwurf"],
            "stop_words": ["stopp", "ende"], "decoys": ["code", "text", "test", "index", "kontext"]},
     "fr": {"wake_words": ["codex"], "send_words": ["écris"], "draft_words": ["brouillon"],
@@ -117,16 +127,6 @@ ADDED_LANGUAGES = {
 
 DEFAULTS = {
     "languages": {
-        "bg": {
-            "enabled": True,
-            # "кодекс" also matches English "Codex"; "кодекса" covers "Кодекс, отвори...".
-            "wake_words": ["кодекс", "кодекса"],
-            "send_words": ["пиши"],  # dictate, then send to the agent
-            "draft_words": ["чернова"],  # dictate, then leave the text in the message box
-            "stop_words": ["стоп", "край"],  # end a voice chat at once
-            # Similar-sounding words give the recognizer somewhere else to put near misses.
-            "decoys": ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"],
-        },
         "en": {
             "enabled": True,
             "wake_words": ["codex"],
@@ -298,7 +298,7 @@ def _validate_languages(value, known_word, msg, errors):
     if not isinstance(value, dict):
         errors["languages"] = msg("type")
         value = {}
-    # Bulgarian and English are always there; an added language stays while it is in the settings.
+    # English is always there; an added language (Bulgarian too) stays while it is in the settings.
     codes = list(DEFAULTS["languages"]) + [c for c in value if c in ADDED_LANGUAGES]
     for code in codes:
         default = language_defaults(code)
@@ -370,7 +370,7 @@ def migrate_settings(raw):
         return raw
     raw = dict(raw)
     if "languages" not in raw:
-        bg = json.loads(json.dumps(DEFAULTS["languages"]["bg"]))
+        bg = json.loads(json.dumps(language_defaults("bg")))
         for old, new in (("wake_words", "wake_words"), ("stop_words", "stop_words"), ("decoys", "decoys")):
             if isinstance(raw.get(old), list):
                 bg[new] = raw[old]
@@ -500,7 +500,7 @@ def models_dir():
     return os.path.join(DATA_DIR, "models")
 
 
-def model_dir(lang="bg"):
+def model_dir(lang="en"):
     """The model of a language: bundled in the exe, next to it, in the project folder or downloaded."""
     name = MODELS[lang]["name"]
     bases = [getattr(sys, "_MEIPASS", None),

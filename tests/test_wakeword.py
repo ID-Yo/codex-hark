@@ -24,7 +24,7 @@ def result(*words):
     return json.dumps({"result": [{"word": w, "conf": c} for w, c in words]})
 
 
-BG = ww.DEFAULTS["languages"]["bg"]
+BG = ww.language_defaults("bg")
 EN = ww.DEFAULTS["languages"]["en"]
 
 
@@ -388,17 +388,30 @@ class WindowSizeTests(unittest.TestCase):
             self.assertFalse(ww.about_link(url), url)
 
 
+class EnglishFirstTests(unittest.TestCase):
+    def test_a_new_install_starts_with_english_only(self):
+        self.assertEqual(list(ww.DEFAULTS["languages"]), ["en"])
+        self.assertEqual(ww.MODEL_NAME, ww.MODELS["en"]["name"])
+
+    def test_bulgarian_is_an_added_language_that_can_be_removed(self):
+        self.assertIn("bg", ww.ADDED_LANGUAGES)
+        settings, errors = ww.validate_settings({"languages": {"en": EN, "bg": BG}})
+        self.assertEqual((list(settings["languages"]), errors), (["en", "bg"], {}))
+        self.assertNotIn("bg", ww.validate_settings({"languages": {"en": EN}})[0]["languages"])
+
+
 class AddedLanguageTests(unittest.TestCase):
     def test_an_added_language_is_kept_with_its_words_and_can_be_removed(self):
         raw = {"languages": {"bg": BG, "en": EN, "de": ww.language_defaults("de")}}
         settings, errors = ww.validate_settings(raw)
-        self.assertEqual((list(settings["languages"]), errors), (["bg", "en", "de"], {}))
+        self.assertEqual((list(settings["languages"]), errors), (["en", "bg", "de"], {}))
         self.assertEqual(settings["languages"]["de"]["send_words"], ["schreib"])
-        self.assertEqual(list(ww.validate_settings({"languages": {"bg": BG, "en": EN}})[0]["languages"]), ["bg", "en"])
+        self.assertEqual(list(ww.validate_settings({"languages": {"bg": BG, "en": EN}})[0]["languages"]), ["en", "bg"])
+        self.assertEqual(list(ww.validate_settings({"languages": {"en": EN}})[0]["languages"]), ["en"])
 
-    def test_bulgarian_and_english_stay_and_unknown_codes_are_dropped(self):
+    def test_english_stays_and_unknown_codes_are_dropped(self):
         settings, errors = ww.validate_settings({"languages": {"xx": {"enabled": True}, "uk": {"wake_words": ["кодекс"]}}})
-        self.assertEqual((list(settings["languages"]), errors), (["bg", "en", "uk"], {}))
+        self.assertEqual((list(settings["languages"]), errors), (["en", "uk"], {}))
         self.assertEqual(settings["languages"]["uk"]["stop_words"], ww.ADDED_LANGUAGES["uk"]["stop_words"])
 
     def test_every_added_language_has_a_model_a_name_and_valid_words(self):

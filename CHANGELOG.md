@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-09
+
+### Changed
+- English first: the English model is bundled in the exe and a new install listens in English only. Bulgarian is now an added language that can be removed; it keeps working for existing settings, and its model is downloaded once after the update.
+- Recognition languages moved from Voice commands to Settings, so the words stay at the top of Voice commands.
+- The interface language choice lists English first.
+
 ## [0.8.0] - 2026-10-09
 
 ### Added
