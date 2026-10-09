@@ -440,10 +440,11 @@ def suggest_threshold(quiet_levels, speech_levels):
     return int(round(quiet + (speech - quiet) / 3))
 
 
-def window_size(screen_width, screen_height, want=(880, 600)):
-    """Start size of the window in logical pixels: the wanted size, but at most 90% of the screen width and
-    82% of its height, because the title bar and the taskbar take the rest."""
-    return min(want[0], screen_width * 90 // 100), min(want[1], screen_height * 82 // 100)
+def window_rect(area_x, area_y, area_width, area_height, want=(880, 600)):
+    """Where the window opens, in logical pixels: the wanted size, but at most 90% of the work area (the screen
+    without the taskbar), centered in it. Returns (x, y, width, height)."""
+    width, height = min(want[0], area_width * 90 // 100), min(want[1], area_height * 90 // 100)
+    return area_x + (area_width - width) // 2, area_y + (area_height - height) // 2, width, height
 
 
 # The only addresses the window may open in the browser (About screen).

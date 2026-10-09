@@ -178,15 +178,16 @@ def set_clipboard(text):
         user32.CloseClipboard()
 
 
-def primary_screen_size():
-    """Logical size of the primary screen; a roomy default when it cannot be read."""
+def primary_work_area():
+    """The primary screen without the taskbar, in logical pixels: (x, y, width, height)."""
     try:
         screens = webview.screens
         screen = next((s for s in screens if s.x == 0 and s.y == 0), screens[0])
-        return screen.width, screen.height
+        frame = screen.frame
+        return frame.X, frame.Y, frame.Width, frame.Height
     except Exception:
-        logging.exception("screen size unknown")
-        return 1920, 1080
+        logging.exception("work area unknown")
+        return 0, 0, 1920, 1000
 
 
 class Api:
@@ -522,9 +523,9 @@ class App:
     def run(self, show_window):
         self.settings = ww.load_settings()
         self.ensure_models()
-        width, height = ww.window_size(*primary_screen_size())
+        x, y, width, height = ww.window_rect(*primary_work_area())
         self.window = webview.create_window(
-            self.t("title"), resource("ui", "index.html"), js_api=Api(self), width=width, height=height,
+            self.t("title"), resource("ui", "index.html"), js_api=Api(self), x=x, y=y, width=width, height=height,
             min_size=(700, 460), hidden=not show_window, background_color="#F2F6FC")
         self.window.events.closing += self.on_closing
         self.icon.run_detached()

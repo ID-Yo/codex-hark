@@ -393,11 +393,14 @@ class CodexKeysTests(unittest.TestCase):
 
 
 class WindowSizeTests(unittest.TestCase):
-    def test_window_fits_the_screen_with_room_for_the_taskbar(self):
-        self.assertEqual(ww.window_size(1280, 720), (880, 590))  # 1920x1080 at 150%
-        self.assertEqual(ww.window_size(1536, 864), (880, 600))  # 1920x1080 at 125%
-        self.assertEqual(ww.window_size(1920, 1080), (880, 600))
-        self.assertEqual(ww.window_size(800, 600), (720, 492))
+    def test_window_is_centered_in_the_work_area_and_never_larger_than_it(self):
+        self.assertEqual(ww.window_rect(0, 0, 1280, 680), (200, 40, 880, 600))  # 1920x1080 at 150%, taskbar 40
+        self.assertEqual(ww.window_rect(0, 0, 1366, 728), (243, 64, 880, 600))
+        self.assertEqual(ww.window_rect(0, 0, 800, 560), (40, 28, 720, 504))
+        self.assertEqual(ww.window_rect(-1280, 0, 1097, 577), (-1172, 29, 880, 519))  # a second screen on the left
+        for area in ((0, 0, 1280, 680), (0, 0, 800, 560), (0, 0, 1024, 600)):
+            x, y, w, h = ww.window_rect(*area)
+            self.assertTrue(x >= area[0] and y >= area[1] and x + w <= area[0] + area[2] and y + h <= area[1] + area[3])
 
     def test_only_the_about_links_open(self):
         self.assertTrue(ww.about_link("https://IvanYosifov.com"))
