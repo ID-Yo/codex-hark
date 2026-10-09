@@ -50,7 +50,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)

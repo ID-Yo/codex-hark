@@ -43,7 +43,8 @@ Say the wake word near your microphone. Left-click the tray icon, or run the exe
 | Voice commands | Words for each language, silence timeout, sensitivity |
 | Microphone | Device choice, live level, speech threshold, automatic calibration |
 | Activity | Last 1000 events with search and filters |
-| Settings | Start with Windows, notifications, sound, interface language, theme, Codex shortcut check, recognition languages (add, remove, switch on or off), About (version, author, links), defaults |
+| Settings | Interface language, notifications, sound, theme, Codex shortcut check; recognition languages (add, remove, switch on or off); Windows: start with Windows, data folder, defaults |
+| About | Version, description, author, links and license |
 
 Tray icon colors: green listening, blue voice chat, orange dictation, gray paused, red error. Settings are stored in `%APPDATA%\CodexHark\settings.json`.
 
