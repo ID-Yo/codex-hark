@@ -199,7 +199,7 @@ class UpdateCheckTests(unittest.TestCase):
                 return self.data
         page = "https://github.com/ID-Yo/codex-hark/releases/tag/v0.13.0"
         with patch.object(ww.urllib.request, "urlopen", return_value=Response({"tag_name": "v0.13.0", "html_url": page})):
-            self.assertEqual(ww.latest_release(), {"version": "0.13.0", "url": page})
+            self.assertEqual(ww.latest_release(), {"version": "0.13.0", "url": page, "exe": "", "sums": ""})
         with patch.object(ww.urllib.request, "urlopen", return_value=Response({"tag_name": "v0.13.0", "html_url": "https://evil.example/x"})):
             self.assertEqual(ww.latest_release()["url"], "")
         with patch.object(ww.urllib.request, "urlopen", return_value=Response({"tag_name": "nightly"})):
@@ -207,6 +207,68 @@ class UpdateCheckTests(unittest.TestCase):
         self.assertTrue(ww.about_link(page))
         self.assertFalse(ww.about_link(page + "/../../x"))
         self.assertTrue(ww.about_link("https://paypal.me/IvanYosifov") and ww.about_link("https://buymeacoffee.com/ivan.yosifov"))
+
+
+class SelfUpdateTests(unittest.TestCase):
+    EXE = b"new exe bytes"
+
+    def release(self, sums):
+        files = {"https://x/exe": self.EXE, "https://x/sums": sums.encode()}
+        class Response:
+            def __init__(self, data):
+                self.data = data
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+            def read(self, size=-1):
+                out, self.data = (self.data, b"") if size < 0 else (self.data[:size], self.data[size:])
+                return out
+        fetch = lambda url, timeout=60: Response(files[url])  # noqa: E731
+        return {"exe": "https://x/exe", "sums": "https://x/sums"}, patch.object(ww, "_fetch", fetch)
+
+    def test_downloads_only_a_file_that_matches_its_sha256(self):
+        good = hashlib.sha256(self.EXE).hexdigest()
+        with tempfile.TemporaryDirectory() as d:
+            release, fetch = self.release(good + "  CodexHark.exe\n")
+            with fetch:
+                path = ww.download_update(release, d)
+            self.assertEqual(Path(path).read_bytes(), self.EXE)
+            release, fetch = self.release("0" * 64 + "  CodexHark.exe\n")
+            with fetch:
+                self.assertRaises(ValueError, ww.download_update, release, os.path.join(d, "bad"))
+            self.assertEqual(os.listdir(os.path.join(d, "bad")), [])
+            self.assertRaises(ValueError, ww.download_update, {"exe": "", "sums": ""}, d)
+
+    def test_latest_release_keeps_only_its_own_download_links(self):
+        data = {"tag_name": "v1.0.0", "html_url": "", "assets": [
+            {"name": "CodexHark.exe", "browser_download_url": "https://github.com/ID-Yo/codex-hark/releases/download/v1.0.0/CodexHark.exe"},
+            {"name": "SHA256SUMS.txt", "browser_download_url": "https://evil.example/SHA256SUMS.txt"}]}
+        class Response:
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+            def read(self):
+                return json.dumps(data).encode()
+        with patch.object(ww.urllib.request, "urlopen", return_value=Response()):
+            r = ww.latest_release()
+        self.assertTrue(r["exe"].endswith("/v1.0.0/CodexHark.exe"))
+        self.assertEqual(r["sums"], "")
+
+    def test_install_swaps_the_exe_and_keeps_the_old_one_until_next_start(self):
+        with tempfile.TemporaryDirectory() as d:
+            exe, new = os.path.join(d, "CodexHark.exe"), os.path.join(d, "new.exe")
+            Path(exe).write_bytes(b"old")
+            Path(new).write_bytes(b"new")
+            ww.install_update(new, exe)
+            self.assertEqual((Path(exe).read_bytes(), Path(exe + ".old").read_bytes()), (b"new", b"old"))
+            ww.remove_old_exe(exe)
+            self.assertFalse(os.path.exists(exe + ".old"))
+            Path(new).write_bytes(b"newer")
+            with patch.object(ww.shutil, "move", side_effect=OSError("locked")):
+                self.assertRaises(OSError, ww.install_update, new, exe)
+            self.assertEqual(Path(exe).read_bytes(), b"new")
 
 
 class ValidateSettingsTests(unittest.TestCase):

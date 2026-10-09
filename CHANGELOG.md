@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-09
+
+### Added
+- Self-update: when the check finds a newer release, Hark downloads its `CodexHark.exe`, checks it against the release `SHA256SUMS.txt`, swaps the exe and restarts as the new version. It waits until no conversation or dictation is open. **Settings > Install updates automatically** (on by default) turns it off; **Update now** installs at once. Only download links of this repository are used, and a file that does not match its SHA256 is deleted.
+
 ## [0.13.0] - 2026-10-09
 
 ### Added

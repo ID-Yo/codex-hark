@@ -24,7 +24,7 @@ SHOW_EVENT = "Local\\CodexHarkShow"  # set by a second launch to bring up the wi
 COLORS = {"starting": (120, 132, 150), "listening": (7, 139, 69), "chat": (8, 104, 222),
           "dictation": (214, 106, 0), "paused": (120, 132, 150), "error": (181, 40, 53)}
 TEXT = {
-    "bg": {"title": "Codex Hark", "open": "Отвори", "pause": "Пауза", "resume": "Продължи",
+    "bg": {"update_unavailable": "Няма версия за инсталиране (или Hark не работи като exe).", "title": "Codex Hark", "open": "Отвори", "pause": "Пауза", "resume": "Продължи",
            "restart": "Рестартирай Hark", "autostart": "Стартирай с Windows", "quit": "Изход",
            "running": "Codex Hark вече работи.",
            "words": "Моделът за {language} не познава: {words}. Тези думи няма да се разпознават.",
@@ -34,7 +34,7 @@ TEXT = {
            "stopped": "Hark спря: {error} Отворете прозореца и изберете „Рестартирай Hark“.",
            "states": {"starting": "стартира", "listening": "слуша", "chat": "гласов чат",
                       "dictation": "диктовка", "paused": "пауза", "error": "грешка"}},
-    "en": {"title": "Codex Hark", "open": "Open", "pause": "Pause", "resume": "Resume",
+    "en": {"update_unavailable": "No version to install (or Hark is not running as the exe).", "title": "Codex Hark", "open": "Open", "pause": "Pause", "resume": "Resume",
            "restart": "Restart Hark", "autostart": "Start with Windows", "quit": "Quit",
            "running": "Codex Hark is already running.",
            "mic": "The microphone is not available. Retrying in 10 s.",
@@ -45,7 +45,7 @@ TEXT = {
            "states": {"starting": "starting", "listening": "listening", "chat": "voice chat",
                       "dictation": "dictation", "paused": "paused", "error": "error"}},
 }
-NO_RESTART = {"theme", "notifications", "language"}  # applied without restarting the listener
+NO_RESTART = {"theme", "notifications", "language", "update_check", "update_install"}  # applied without restarting the listener
 MAX_RESTARTS = 3  # within RESTART_WINDOW_S
 RESTART_WINDOW_S = 300
 NOTICE_INTERVAL_S = 60
@@ -241,6 +241,11 @@ class Api:
         """The Settings button: look for a new version now."""
         return self._app.check_updates(manual=True)
 
+    def install_update(self):
+        """The Settings button: install the version found by the last check."""
+        error = self._app.install_update(manual=True)
+        return {"ok": error is None, "text": error or ""}
+
     def last_update(self):
         """The result of the last automatic check (None before the first)."""
         return self._app.update
@@ -323,6 +328,7 @@ class App:
         self.crashes = []
         self.last_notice = {}
         self.update = None  # the last update check result for the window
+        self.release = None  # a newer release found by the last check
         self._codex = (0.0, False)
         self.images = {state: make_image(color) for state, color in COLORS.items()}
         t = self.t
@@ -458,8 +464,33 @@ class App:
         else:
             logging.info("update check: %s %s", text, detail)
         self.update = {"status": status, "text": f"{text} — {detail}" if detail else text,
-                       "version": args.get("version", ""), "url": latest.get("url", "")}
+                       "version": args.get("version", ""), "url": latest.get("url", ""),
+                       "can_install": status == "new" and getattr(sys, "frozen", False) and bool(latest.get("exe"))}
+        self.release = latest if status == "new" else None
         return self.update
+
+    def install_update(self, manual=False):
+        """Download the found release, check its SHA256, swap the exe and start the new one. Returns an error text
+        (None when the new version is starting)."""
+        release = self.release
+        if not release or not getattr(sys, "frozen", False):
+            return self.t("update_unavailable")
+        args = {"version": release["version"], "current": ww.__version__}
+        try:
+            self.events.add("settings", "update_installing", **args)
+            new_exe = ww.download_update(release, os.path.join(ww.DATA_DIR, "update"))
+            ww.install_update(new_exe, sys.executable)
+        except (OSError, ValueError) as e:
+            self.events.add("error", "update_failed", error=str(e))
+            text, detail = ww.message("update_failed", self.lang(), error=str(e))
+            self.notify("update_failed", f"{text} — {detail}")
+            self.release = None  # do not retry this release until the next check
+            return f"{text} — {detail}"
+        logging.info("installed %s; starting it", release["version"])
+        subprocess.Popen([sys.executable, "--after-update", str(os.getpid()), "--previous", ww.__version__]
+                         + ([] if manual else ["--hidden"]), close_fds=True)
+        threading.Thread(target=self.quit, daemon=True).start()
+        return None
 
     def watch_updates(self):
         """Check for a new version a minute after start and then every 12 hours, while the setting is on."""
@@ -470,6 +501,10 @@ class App:
                 next_check = time.monotonic() + ww.UPDATE_INTERVAL_S
                 if self.settings.get("update_check", True):
                     self.check_updates()
+            # Install a found release by itself, but never in the middle of a conversation or dictation.
+            if (self.release and self.settings.get("update_install", True) and getattr(sys, "frozen", False)
+                    and self.state in ("listening", "paused")):
+                self.install_update()
 
     def show(self):
         if self.window:
@@ -595,20 +630,32 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog=ww.APP_NAME)
     parser.add_argument("--autostart", choices=["on", "off"], help="turn start with Windows on or off")
     parser.add_argument("--hidden", action="store_true", help="start in the tray without opening the window")
+    parser.add_argument("--after-update", type=int, metavar="PID", help=argparse.SUPPRESS)
+    parser.add_argument("--previous", default="", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     ww.setup_logging()
     if args.autostart:
         set_autostart(args.autostart == "on")
         return
+    if args.after_update:  # the old version is closing; wait for it before taking the single-instance lock
+        try:
+            ww.psutil.Process(args.after_update).wait(timeout=30)
+        except (ww.psutil.Error, ww.psutil.TimeoutExpired):
+            pass
     if not ww.acquire_single_instance():
         handle = kernel32.OpenEventW(0x0002, False, SHOW_EVENT)  # EVENT_MODIFY_STATE
         if handle:
             kernel32.SetEvent(handle)
         return
     logging.info("%s %s started (%s)", ww.APP_NAME, ww.__version__, launch_command())
+    if getattr(sys, "frozen", False):
+        ww.remove_old_exe(sys.executable)
     migrate_legacy_autostart()
     refresh_autostart()
-    App().run(show_window=not args.hidden)
+    app = App()
+    if args.after_update and args.previous:
+        app.events.add("settings", "update_done", version=ww.__version__, previous=args.previous)
+    app.run(show_window=not args.hidden)
 
 
 if __name__ == "__main__":

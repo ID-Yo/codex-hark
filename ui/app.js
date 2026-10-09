@@ -31,7 +31,7 @@ const I18N = {
     add: "+ Добави", newWord: "нова дума", remove: "Премахни {w}",
     aboutTitle: "За приложението", aboutText: "Hark слуша на вашия компютър за ключова дума и управлява Codex Desktop с глас: отваря гласов чат и диктува. Разпознаването е локално, аудиото не се записва и не излиза навън.", aboutAuthor: "Автор: Иван Йосифов", aboutDonate: "Подкрепете проекта:",
     aboutLegal: "Лиценз MIT. Неофициален проект, не е свързан с OpenAI; „Codex“ е име на продукт на OpenAI.",
-    keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери", updTitle: "Нови версии", updHelp: "Проверява публичното репо в GitHub след стартиране и на всеки 12 часа.", updCheck: "Провери сега", updAuto: "Автоматична проверка", updGet: "Изтегли {v}", updChecking: "Проверява…",
+    keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери", updTitle: "Нови версии", updHelp: "Проверява публичното репо в GitHub след стартиране и на всеки 12 часа.", updCheck: "Провери сега", updAuto: "Автоматична проверка", updGet: "Изтегли {v}", updChecking: "Проверява…", updInstall: "Обнови сега", updInstalling: "Изтегля и проверява новата версия…", updAutoInstall: "Инсталирай обновленията автоматично", updAutoInstallHelp: "Тегли новата версия, проверява SHA256 и рестартира Hark, когато няма отворен разговор.",
     windowsTitle: "Windows", windowsHelp: "Стартиране, папка с данни и настройки по подразбиране.",
     addLang: "Добави език", removeLang: "Премахни", addLangHelp: "Моделът се изтегля след „Запази“.",
     checking: "Проверка…", wordOk: "Моделът познава: {w}", noModel: "Моделът за този език още не е изтеглен — думите не могат да се проверят.",
@@ -78,7 +78,7 @@ const I18N = {
     add: "+ Add", newWord: "new word", remove: "Remove {w}",
     aboutTitle: "About", aboutText: "Hark listens on your computer for a wake word and controls Codex Desktop by voice: it opens voice chat and dictates. Recognition is local; audio is never recorded or sent anywhere.", aboutAuthor: "Author: Ivan Yosifov", aboutDonate: "Support the project:",
     aboutLegal: "MIT License. Unofficial project, not affiliated with OpenAI; “Codex” is the name of an OpenAI product.",
-    keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check", updTitle: "New versions", updHelp: "Checks the public GitHub repository after start and every 12 hours.", updCheck: "Check now", updAuto: "Automatic check", updGet: "Download {v}", updChecking: "Checking…",
+    keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check", updTitle: "New versions", updHelp: "Checks the public GitHub repository after start and every 12 hours.", updCheck: "Check now", updAuto: "Automatic check", updGet: "Download {v}", updChecking: "Checking…", updInstall: "Update now", updInstalling: "Downloading and checking the new version…", updAutoInstall: "Install updates automatically", updAutoInstallHelp: "Downloads the new version, checks its SHA256 and restarts Hark when no conversation is open.",
     windowsTitle: "Windows", windowsHelp: "Start-up, data folder and default settings.",
     addLang: "Add language", removeLang: "Remove", addLangHelp: "The model is downloaded after you save.",
     checking: "Checking…", wordOk: "The model knows: {w}", noModel: "The model for this language is not downloaded yet, so the words cannot be checked.",
@@ -138,7 +138,7 @@ function fixtureApi() {
     chat_enabled: true, dictation_enabled: true, min_conf: 0.5, idle_seconds: 10,
     dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
     mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
-    chat_target: "new", chat_thread: "", chat_project: "", update_check: true,
+    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true,
     languages: {
       en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
       bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
@@ -147,12 +147,12 @@ function fixtureApi() {
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.13.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.13.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.14.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.14.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.13.0 — you have 0.12.0", version: "0.13.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.13.0" }), last_update: async () => null,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.15.0 — you have 0.14.0", version: "0.15.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.15.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -285,9 +285,10 @@ function chatTarget() {
 async function refreshTargets() { if (api.codex_targets) { ui.targets = await api.codex_targets(); if (ui.screen === "commands") render(); } }
 function updatesRow() {
   const u = ui.update;
-  const note = ui.updChecking ? L.updChecking : u ? u.text : L.updHelp;
+  const note = ui.updChecking ? L.updChecking : ui.installing ? L.updInstalling : ui.installError || (u ? u.text : L.updHelp);
   const get = u && u.status === "new" && u.url ? '<a class="link" href="' + esc(u.url) + '" data-url="' + esc(u.url) + '">' + esc(T("updGet", { v: u.version })) + "</a>" : "";
-  return '<div class="set"><div><strong>' + L.updTitle + "</strong><small" + (u && u.status === "error" ? ' class="error-text"' : "") + ">" + esc(note) + "</small>" + get + '</div><div class="steps">' + toggle("update_check", L.updAuto) + '<button class="btn btn-small" data-action="check-updates"' + (ui.updChecking ? " disabled" : "") + ">" + L.updCheck + "</button></div></div>";
+  return '<div class="set"><div><strong>' + L.updTitle + "</strong><small" + (u && u.status === "error" ? ' class="error-text"' : "") + ">" + esc(note) + "</small>" + get + '</div><div class="steps">' + toggle("update_check", L.updAuto) + (u && u.can_install ? '<button class="btn btn-small btn-primary" data-action="install-update"' + (ui.installing ? " disabled" : "") + ">" + L.updInstall + "</button>" : "") + '<button class="btn btn-small" data-action="check-updates"' + (ui.updChecking || ui.installing ? " disabled" : "") + ">" + L.updCheck + "</button></div></div>" +
+    '<div class="set"><div><strong>' + L.updAutoInstall + "</strong><small>" + L.updAutoInstallHelp + "</small></div>" + toggle("update_install", L.updAutoInstall) + "</div>";
 }
 function toggle(key, label) {
   return '<label class="switch" title="' + label + '"><input type="checkbox" data-key="' + key + '" aria-label="' + label + '"' + (getP(ui.draft, key) ? " checked" : "") + "><span></span></label>";
@@ -484,7 +485,7 @@ async function save(next = ui.draft) {
 }
 // Unsaved edits on other screens survive an immediate save from the Settings screen.
 function pending(next) { const out = {}; for (const k in ui.draft) if (next !== ui.draft && JSON.stringify(ui.draft[k]) !== JSON.stringify(ui.saved[k]) && !IMMEDIATE.includes(k)) out[k] = ui.draft[k]; return out; }
-const IMMEDIATE = ["notifications", "beep", "theme", "language", "update_check"];
+const IMMEDIATE = ["notifications", "beep", "theme", "language", "update_check", "update_install"];
 async function setDraft(key, value) {
   delete ui.errors[key];
   if (IMMEDIATE.includes(key)) { ui.draft[key] = value; return save({ ...ui.saved, [key]: value }); }
@@ -538,6 +539,12 @@ document.addEventListener("click", async (ev) => {
     case "remove-lang":
       delete ui.draft.languages[d.lang]; if (ui.wordsLang === d.lang) ui.wordsLang = "en"; ui.notice = null; render(); updateSaveBar(); break;
     case "calibrate": await calibrate(); break;
+    case "install-update": {
+      ui.installing = true; ui.installError = ""; render();
+      const r = await api.install_update();
+      if (!r.ok) { ui.installing = false; ui.installError = r.text; render(); }
+      break;
+    }
     case "check-updates": {
       ui.updChecking = true; render();
       try { ui.update = await api.check_updates(); } finally { ui.updChecking = false; render(); }
