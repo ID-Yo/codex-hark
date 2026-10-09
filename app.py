@@ -28,7 +28,6 @@ TEXT = {
            "restart": "Рестартирай Hark", "autostart": "Стартирай с Windows", "quit": "Изход",
            "running": "Codex Hark вече работи.",
            "words": "Моделът за {language} не познава: {words}. Тези думи няма да се разпознават.",
-           "chatgpt": "ChatGPT Classic не е намерен или не е влязъл в профила, затова Hark не успя да започне разговор.",
            "mic": "Няма достъп до микрофона. Нов опит след 10 s.",
            "codex": "Бутонът Dictate не е намерен. Отворен ли е Codex?",
            "crash": "Hark се срина и се рестартира: {error}",
@@ -41,7 +40,6 @@ TEXT = {
            "mic": "The microphone is not available. Retrying in 10 s.",
            "codex": "The Dictate button was not found. Is Codex open?",
            "words": "The {language} model does not know: {words}. These words will not be recognized.",
-           "chatgpt": "ChatGPT Classic was not found or is not signed in, so Hark could not start the conversation.",
            "crash": "Hark crashed and is restarting: {error}",
            "stopped": "Hark stopped: {error} Open the window and choose Restart Hark.",
            "states": {"starting": "starting", "listening": "listening", "chat": "voice chat",
@@ -210,7 +208,8 @@ class Api:
         return {"settings": app.settings, "defaults": ww.DEFAULTS, "limits": ww.LIMITS,
                 "devices": ww.input_devices(), "autostart": autostart_command() is not None,
                 "system_dark": system_dark(), "version": ww.__version__, "lang": app.lang(),
-                "hotkeys": ww.codex_hotkeys()}
+                "hotkeys": ww.codex_hotkeys(),
+                "added_languages": {code: ww.language_defaults(code) for code in ww.ADDED_LANGUAGES}}
 
     def save_settings(self, raw):
         app = self._app

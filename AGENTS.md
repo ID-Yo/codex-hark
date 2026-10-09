@@ -24,14 +24,15 @@ Instructions for coding agents in this repository. README.md explains the produc
 - Python 3.13; keep dependencies pinned in `requirements.txt`; a new dependency needs a reason and an entry in `THIRD_PARTY.md`.
 - Python sources use CRLF line endings; keep them so diffs show only real changes.
 - Changing a user-visible string means changing both languages.
-- `chat_words` are a second wake target next to `wake_words` and drive ChatGPT Classic; `chatgpt_enabled` is off by default because "chat" is a common word.
+- A new recognition language needs an entry in `MODELS` (name, size, SHA256 of the zip), `LANGUAGE_NAMES` (both interface languages), `ADDED_LANGUAGES` (starting words, each checked against the model) and `langNames` in `ui/app.js`, plus a row in `THIRD_PARTY.md`.
+- Version numbers follow SemVer: PATCH for fixes, MINOR for added, removed or visibly changed behaviour.
 - Only `wake_words` may hold phrases (up to 3 words, matched as consecutive recognized words); every other word list holds single words. Vosk silently ignores words that are missing from the model, so new words must be checked with `model_knows` (the window uses `Api.check_words`).
 - Keep the version in `wakeword.py` and the tag in sync; add a CHANGELOG entry for user-visible changes.
 
 ## Boundaries
 
 - Never commit secrets, personal data, local absolute paths, speech models, logs or `dist/`, `build/`.
-- Treat the internals of Codex Desktop and ChatGPT Classic as fragile: the keys in Codex's `keybindings.json` (`realtimeVoice`, `globalDictationHold`), the button names `Dictate`, `Stop dictation`, `Transcribe and send` (Codex) and `Start Voice`, `End Voice`, `Cancel loading`, `Start dictation`, `Submit dictation`, `Cancel dictation` (ChatGPT Classic), the package names, the `ChatGPT.exe` process and the thread-history database are not covered by tests. Do not change them without checking against the installed apps. `check_codex_keys` must never replace a key the user chose.
+- Treat the internals of Codex Desktop as fragile: the keys in Codex's `keybindings.json` (`realtimeVoice`, `globalDictationHold`), the button names `Dictate`, `Stop dictation`, `Transcribe and send`, the package name, the `ChatGPT.exe` process and the thread-history database are not covered by tests. Do not change them without checking against an installed Codex. `check_codex_keys` must never replace a key the user chose.
 - Audio must stay local: do not add code that records, stores or uploads audio or dictated text.
 - Ask before: adding dependencies, changing the settings file format, publishing a Release, anything that adds network access.
 
