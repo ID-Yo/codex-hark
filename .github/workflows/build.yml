@@ -20,8 +20,8 @@ jobs:
           python-version: "3.13"
       - uses: actions/cache@v4
         with:
-          path: vosk-model-small-ru-0.22
-          key: vosk-model-small-ru-0.22
+          path: vosk-model-small-en-us-0.15
+          key: vosk-model-small-en-us-0.15
       - name: Build
         shell: pwsh
         run: ./build.ps1

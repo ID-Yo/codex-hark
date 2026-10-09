@@ -2,7 +2,7 @@
 
 [English](README.md) · [Български](README.bg.md)
 
-> Say "Codex" to open Codex Desktop voice chat on Windows. A local wake-word app for English and Bulgarian.
+> Say "Codex" to open Codex Desktop voice chat on Windows. A local wake-word app, English first, with more languages to add.
 
 Unofficial community project; not affiliated with or endorsed by OpenAI. "Codex" is the name of an OpenAI product.
 
@@ -14,7 +14,7 @@ Codex Desktop starts a voice chat with a hotkey (`Alt+Z`) but has no wake word, 
 
 | Say | What happens |
 |---|---|
-| "Codex" (Bulgarian: „Кодекс“) | Opens voice chat. Closes it after 10 s of silence, but not while Codex is searching or thinking |
+| "Codex" (with Bulgarian added: „Кодекс“) | Opens voice chat. Closes it after 10 s of silence, but not while Codex is searching or thinking |
 | "Codex, write" („Кодекс, пиши“) | Dictates into the current chat; after 4 s of silence the text is sent to the agent |
 | "Codex, draft" („Кодекс, чернова“) | Dictates; the text stays in the input box for review |
 | "Codex, stop" („Кодекс, стоп“) | Closes the voice chat at once |
@@ -40,10 +40,10 @@ Say the wake word near your microphone. Left-click the tray icon, or run the exe
 | Screen | What it does |
 |---|---|
 | Home | Status, pause/resume, whether Codex is open, live microphone level, recent events |
-| Voice commands | Recognition languages, words for each language, silence timeout, sensitivity |
+| Voice commands | Words for each language, silence timeout, sensitivity |
 | Microphone | Device choice, live level, speech threshold, automatic calibration |
 | Activity | Last 1000 events with search and filters |
-| Settings | Start with Windows, notifications, sound, interface language, theme, Codex shortcut check, About (version, author, links), defaults |
+| Settings | Start with Windows, notifications, sound, interface language, theme, Codex shortcut check, recognition languages (add, remove, switch on or off), About (version, author, links), defaults |
 
 Tray icon colors: green listening, blue voice chat, orange dictation, gray paused, red error. Settings are stored in `%APPDATA%\CodexHark\settings.json`.
 
@@ -57,7 +57,7 @@ The speech model recognizes only words from its own vocabulary. While you type, 
 
 ![Checking the phrase “hey jarvis” in Voice commands (sample data)](docs/screenshot-wake-words.png)
 
-- The Bulgarian slot uses a Russian model, so write Bulgarian words in Russian spelling (for example „хей“, „кодекс“). Words that exist only in Bulgarian, such as „бобър“, are not in the vocabulary.
+- Bulgarian uses a Russian model, so write Bulgarian words in Russian spelling (for example „хей“, „кодекс“). Words that exist only in Bulgarian, such as „бобър“, are not in the vocabulary.
 - Choose a distinctive word that is rare in everyday speech. A phrase must be heard as all of its words in a row, and its confidence is the mean of its words' confidences.
 - Put similar-sounding words in **Similar words**, so that near misses do not trigger the wake word.
 - If the model of a language is not downloaded yet, its words cannot be checked. Hark then warns on start and marks in red the saved words the model does not know, because Hark ignores them.
@@ -68,16 +68,21 @@ Hark needs two keys in Codex: the **Voice Chat hotkey** (command `realtimeVoice`
 
 ## Languages
 
-Each language has its own small offline [Vosk](https://alphacephei.com/vosk/) model and its own words. All enabled languages listen at the same time.
+Hark is English first: the English model is bundled in the exe and works right away. More languages are added in **Settings > Recognition languages > Add language**. The model of an added language is downloaded to `%APPDATA%\CodexHark\models` after you save and checked by SHA256. Each added language starts with words its model knows, and you can remove it again. English can be switched off but stays in the list.
 
-| Language | Model | Size |
-|---|---|---|
-| Bulgarian | `vosk-model-small-ru-0.22` (there is no Bulgarian Vosk model; the Russian one also understands "Codex"), bundled in the exe | 45 MB |
-| English | `vosk-model-small-en-us-0.15`, downloaded on first use to `%APPDATA%\CodexHark\models` and checked by SHA256 | 41 MB |
+| Language | Model | Size | Example |
+|---|---|---|---|
+| English | `vosk-model-small-en-us-0.15`, bundled | 41 MB | "Codex, write" |
+| Bulgarian | `vosk-model-small-ru-0.22` (there is no Bulgarian Vosk model; the Russian one also understands "Codex") | 45 MB | „Кодекс, пиши“ |
+| German | `vosk-model-small-de-0.15` | 45 MB | "Codex, schreib" |
+| French | `vosk-model-small-fr-0.22` | 41 MB | "Codex, écris" |
+| Spanish | `vosk-model-small-es-0.42` | 39 MB | "Codex, escribe" |
+| Italian | `vosk-model-small-it-0.22` | 48 MB | "Codex, scrivi" |
+| Polish | `vosk-model-small-pl-0.22` | 50 MB | "Kodeks, pisz" |
+| Dutch | `vosk-model-small-nl-0.22` | 39 MB | "Codex, schrijf" |
+| Ukrainian | `vosk-model-small-uk-v3-nano` | 74 MB | „Кодекс, пиши“ |
 
-More languages can be added in **Voice commands > Recognition languages > Add language**: German, French, Spanish, Italian, Polish, Dutch and Ukrainian (small Vosk models of 39 to 74 MB). Each starts with words that its model knows, for example "Codex, schreib" in German or „Кодекс, пиши“ in Ukrainian; change them like any other words. The model is downloaded and checked by SHA256 after you save. An added language can be removed again; Bulgarian and English can only be switched off.
-
-Each enabled language adds about 200 MB of memory; CPU stays under 1%.
+All enabled languages listen at the same time. Each one adds about 200 MB of memory; CPU stays under 1%.
 
 ## How it works
 
@@ -108,11 +113,11 @@ Turn off **Start with Windows**, choose **Quit** in the tray menu and delete the
 py -3.13 -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 .\.venv\Scripts\python -m unittest discover -s tests
-.\.venv\Scripts\pythonw.exe app.py   # needs the Bulgarian model folder, see build.ps1
+.\.venv\Scripts\pythonw.exe app.py   # needs the English model folder, see build.ps1
 ./build.ps1                            # clean venv, model check, tests, dist\CodexHark.exe and SHA256SUMS.txt
 ```
 
-`build.ps1` downloads and verifies the Bulgarian model, runs the tests and builds one exe with PyInstaller. Every push builds the exe in GitHub Actions; +`+vX.Y.Z+`+ that matches +`+__version__+`+ in +`+wakeword.py+`+ creates a Release.`vX.Y.Z` that matches `__version__` in `wakeword.py` creates a Release.
+`build.ps1` downloads and verifies the English model, runs the tests and builds one exe with PyInstaller. Every push builds the exe in GitHub Actions; +`+vX.Y.Z+`+ that matches +`+__version__+`+ in +`+wakeword.py+`+ creates a Release.`vX.Y.Z` that matches `__version__` in `wakeword.py` creates a Release.
 
 ## Project layout
 

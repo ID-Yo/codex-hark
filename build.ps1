@@ -16,9 +16,9 @@ $build = Join-Path $root "build"
 $dist = Join-Path $root "dist"
 $venv = Join-Path $build "venv"
 $py = Join-Path $venv "Scripts\python.exe"
-$modelName = "vosk-model-small-ru-0.22"
+$modelName = "vosk-model-small-en-us-0.15"
 $modelUrl = "https://alphacephei.com/vosk/models/$modelName.zip"
-$modelSha256 = "961D5FF98A17F4AA6DE69864D0AA71FA5BAC682301D2B5D17A3F24C5C99A46D4"
+$modelSha256 = "30F26242C4EB449F948E42CB302DD7A686CB29A3423A8367F99FF41780942498"
 New-Item -ItemType Directory -Force $build, $dist | Out-Null
 
 function Invoke-Checked([string]$Exe, [string[]]$Arguments) {
