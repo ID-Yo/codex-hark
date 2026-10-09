@@ -47,7 +47,7 @@ class HeardTests(unittest.TestCase):
 
     def test_grammar_has_every_word_of_the_language(self):
         words = json.loads(ww.grammar(EN))
-        self.assertEqual(set(words), {"codex", "write", "draft", "stop", "[unk]", *EN["decoys"]})
+        self.assertEqual(set(words), {"codex", "chat", "write", "draft", "stop", "[unk]", *EN["decoys"]})
 
 
 class WakePhraseTests(unittest.TestCase):
@@ -294,6 +294,121 @@ class SettingsTests(unittest.TestCase):
             f.write("{ broken")
         with self.assertRaisesRegex(ValueError, "settings.json"):
             ww.load_settings(self.path, env={})
+
+
+class ChatCommandTests(unittest.TestCase):
+    def test_chat_words_are_a_second_target_next_to_the_wake_words(self):
+        res = result(("chat", 1.0), ("write", 0.9))
+        self.assertEqual(ww.heard(res, EN, 0.5, "chat_words"), ("chat", "write", 1.0))
+        self.assertEqual(ww.heard(res, EN, 0.5)[0], "")
+        self.assertEqual(ww.heard(result(("codex", 1.0)), EN, 0.5, "chat_words")[0], "")
+        self.assertEqual(ww.heard(result(("чат", 1.0), ("стоп", 1.0)), BG, 0.5, "chat_words"), ("чат", "стоп", 1.0))
+
+    def test_chat_words_can_be_a_phrase_and_the_chat_target_is_off_by_default(self):
+        words = {**EN, "chat_words": ["hey chat"]}
+        self.assertEqual(ww.heard(result(("hey", 1.0), ("chat", 1.0)), words, 0.5, "chat_words")[0], "hey chat")
+        self.assertIn("hey chat", json.loads(ww.grammar(words)))
+        self.assertIs(ww.DEFAULTS["chatgpt_enabled"], False)
+
+    def test_chat_words_are_checked_like_the_other_lists(self):
+        settings, errors = ww.validate_settings(langs(chat_words=["  Хей  Чат "]))
+        self.assertEqual((settings["languages"]["bg"]["chat_words"], errors), (["хей чат"], {}))
+        self.assertEqual(ww.validate_settings(langs(chat_words=[]))[1], {})
+        known = lambda lang, w: w != "чатик"  # noqa: E731
+        self.assertIn("чатик", ww.validate_settings(langs(chat_words=["чатик"]), known_word=known)[1]["languages.bg.chat_words"])
+        self.assertIn("languages.bg.stop_words", ww.validate_settings(langs(stop_words=["чат"]))[1])
+
+
+class CodexKeysTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = os.path.join(self.temp.name, "keybindings.json")
+
+    def write(self, entries):
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(entries, f)
+
+    def read(self):
+        with open(self.path, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_no_codex_folder(self):
+        missing = os.path.join(self.temp.name, "nothing", "keybindings.json")
+        self.assertEqual(ww.check_codex_keys(missing, fix=True)["status"], "no_codex")
+
+    def test_missing_file_is_reported_and_then_created(self):
+        self.assertEqual(ww.check_codex_keys(self.path)["status"], "missing")
+        self.assertFalse(os.path.exists(self.path))
+        result = ww.check_codex_keys(self.path, fix=True)
+        self.assertEqual((result["status"], sorted(result["added"])), ("added", ["globalDictationHold", "realtimeVoice"]))
+        self.assertEqual({e["command"]: e["key"] for e in self.read()}, {"realtimeVoice": "Alt+Z", "globalDictationHold": "Alt+X"})
+        self.assertEqual(ww.check_codex_keys(self.path, fix=True)["status"], "ok")
+
+    def test_other_entries_stay_and_a_backup_is_made(self):
+        other = {"command": "newTask", "key": "Ctrl+N"}
+        self.write([other, {"command": "realtimeVoice", "key": None}])
+        result = ww.check_codex_keys(self.path, fix=True)
+        self.assertEqual(result["status"], "added")
+        saved = self.read()
+        self.assertEqual(saved[0], other)
+        self.assertEqual([e for e in saved if e["command"] == "realtimeVoice"], [{"command": "realtimeVoice", "key": "Alt+Z"}])
+        with open(self.path + ".hark-backup", encoding="utf-8") as f:
+            self.assertEqual(json.load(f), [other, {"command": "realtimeVoice", "key": None}])
+
+    def test_a_key_the_user_chose_is_kept_and_used(self):
+        entries = [{"command": "realtimeVoice", "key": "Ctrl+Shift+V"}, {"command": "globalDictationHold", "key": "Alt+X"}]
+        self.write(entries)
+        result = ww.check_codex_keys(self.path, fix=True)
+        self.assertEqual((result["status"], result["keys"]["realtimeVoice"]), ("ok", "Ctrl+Shift+V"))
+        self.assertEqual(self.read(), entries)
+        with patch.object(ww, "keybindings_path", return_value=self.path):
+            self.assertEqual(ww.codex_hotkeys(), {"voice": "Ctrl+Shift+V", "dictation": "Alt+X"})
+
+    def test_a_key_used_by_another_command_is_not_taken(self):
+        self.write([{"command": "openTerminal", "key": "alt+z"}])
+        result = ww.check_codex_keys(self.path, fix=True)
+        self.assertEqual((result["status"], result["conflicts"], result["added"]),
+                         ("conflict", {"realtimeVoice": "openTerminal"}, ["globalDictationHold"]))
+        self.assertEqual([e["command"] for e in self.read() if e["key"] and e["key"].lower() == "alt+z"], ["openTerminal"])
+
+    def test_an_unreadable_file_is_left_alone(self):
+        for text in ("{not json", '{"command": "x"}', '["text"]'):
+            with open(self.path, "w", encoding="utf-8") as f:
+                f.write(text)
+            self.assertEqual(ww.check_codex_keys(self.path, fix=True)["status"], "invalid")
+            with open(self.path, encoding="utf-8") as f:
+                self.assertEqual(f.read(), text)
+
+    def test_hotkeys_become_key_codes(self):
+        self.assertEqual(ww.parse_hotkey("Alt+Z"), [0x12, 0x5A])
+        self.assertEqual(ww.parse_hotkey("Ctrl+Shift+V"), [0x11, 0x10, 0x56])
+        self.assertEqual(ww.parse_hotkey("F9"), [0x78])
+        self.assertIsNone(ww.parse_hotkey("Alt+Nope"))
+        self.assertIsNone(ww.parse_hotkey("Hyper+Z"))
+
+    def test_voice_key_defaults_to_alt_z(self):
+        with patch.object(ww, "keybindings_path", return_value=self.path):
+            self.assertEqual(ww.codex_hotkeys(), {"voice": "Alt+Z", "dictation": "Alt+X"})
+
+
+class WindowSizeTests(unittest.TestCase):
+    def test_window_is_centered_in_the_work_area_and_never_larger_than_it(self):
+        self.assertEqual(ww.window_rect(0, 0, 1280, 680), (200, 40, 880, 600))  # 1920x1080 at 150%, taskbar 40
+        self.assertEqual(ww.window_rect(0, 0, 1366, 728), (243, 64, 880, 600))
+        self.assertEqual(ww.window_rect(0, 0, 800, 560), (40, 28, 720, 504))
+        self.assertEqual(ww.window_rect(-1280, 0, 1097, 577), (-1172, 29, 880, 519))  # a second screen on the left
+        for area in ((0, 0, 1280, 680), (0, 0, 800, 560), (0, 0, 1024, 600)):
+            x, y, w, h = ww.window_rect(*area)
+            self.assertTrue(x >= area[0] and y >= area[1] and x + w <= area[0] + area[2] and y + h <= area[1] + area[3])
+
+    def test_only_the_about_links_open(self):
+        self.assertTrue(ww.about_link("https://IvanYosifov.com"))
+        self.assertTrue(ww.about_link("https://ivanyosifov.com/"))
+        self.assertTrue(ww.about_link("https://github.com/ID-Yo/codex-hark"))
+        for url in ("http://ivanyosifov.com", "https://ivanyosifov.com.evil.example", "file:///C:/Windows/notepad.exe",
+                    "https://github.com/ID-Yo/other", "", None):
+            self.assertFalse(ww.about_link(url), url)
 
 
 if __name__ == "__main__":

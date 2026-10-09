@@ -16,7 +16,10 @@ import logging
 import logging.handlers
 import os
 import platform
+import re
+import shutil
 import sqlite3
+import subprocess
 import sys
 import threading
 import time
@@ -48,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -84,6 +87,7 @@ DEFAULTS = {
             "send_words": ["пиши"],  # dictate, then send to the agent
             "draft_words": ["чернова"],  # dictate, then leave the text in the message box
             "stop_words": ["стоп", "край"],  # end a voice chat at once
+            "chat_words": ["чат"],  # ChatGPT Classic: a voice conversation, or dictation with a dictation word
             # Similar-sounding words give the recognizer somewhere else to put near misses.
             "decoys": ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"],
         },
@@ -93,12 +97,14 @@ DEFAULTS = {
             "send_words": ["write"],
             "draft_words": ["draft"],
             "stop_words": ["stop"],
+            "chat_words": ["chat"],
             "decoys": ["code", "codes", "coding", "text", "alexa", "context", "craft"],
         },
     },
     "stop_enabled": True,
     "idle_close": True,  # end a voice chat after idle_seconds of silence (never while Codex is working)
     "chat_enabled": True,
+    "chatgpt_enabled": False,  # the chat commands drive ChatGPT Classic; off until the user turns them on
     "dictation_enabled": True,
     "min_conf": 0.5,
     "idle_seconds": 10,  # end the voice chat after this much silence from you and Codex
@@ -111,15 +117,17 @@ DEFAULTS = {
     "notifications": True,
     "theme": "system",
     "language": "auto",  # auto: Bulgarian when Windows is in Bulgarian, otherwise English
+    "keys_checked": False,  # the first-run check of Codex's shortcuts has been done
 }
 # Allowed range of each number setting.
 LIMITS = {"min_conf": (0.2, 0.95), "idle_seconds": (3, 120), "dictation_idle_seconds": (1, 30),
           "speech_rms": (20, 5000), "codex_audio_peak": (0.001, 0.5), "cooldown_seconds": (1, 60)}
-WORD_LISTS = ("wake_words", "send_words", "draft_words", "stop_words", "decoys")
-COMMAND_LISTS = WORD_LISTS[:4]  # a word may appear in only one of these per language
+WORD_LISTS = ("wake_words", "chat_words", "send_words", "draft_words", "stop_words", "decoys")
+COMMAND_LISTS = WORD_LISTS[:5]  # a word may appear in only one of these per language
 OLD_WORD_KEYS = ("wake_words", "dictate_words", "stop_words", "decoys", "dictation_send")
 THEMES = ("system", "light", "dark")
 MAX_PHRASE_WORDS = 3  # a wake phrase such as "hey jarvis"; the other lists hold single words
+PHRASE_LISTS = ("wake_words", "chat_words")
 LANGUAGES = ("auto", "bg", "en")
 # Environment variables keep working and win over settings.json.
 ENV_OVERRIDES = {"min_conf": "CODEX_WAKE_CONF", "idle_seconds": "CODEX_IDLE_SECONDS",
@@ -143,7 +151,7 @@ MESSAGES = {
     "inserted": {"bg": ("Текстът е оставен в полето", "след {seconds} s тишина"), "en": ("Text left in the message box", "after {seconds} s of silence")},
     "button_missing": {"bg": ("Бутонът {button} не е намерен", "Отворен ли е Codex?"), "en": ("The {button} button was not found", "Is Codex open?")},
     "mic_error": {"bg": ("Няма достъп до микрофона", "{error}"), "en": ("The microphone is not available", "{error}")},
-    "crash": {"bg": ("Слушателят се срина", "{error}"), "en": ("The listener crashed", "{error}")},
+    "crash": {"bg": ("Hark се срина", "{error}"), "en": ("Hark crashed", "{error}")},
     "paused": {"bg": ("Слушането е спряно", ""), "en": ("Listening paused", "")},
     "resumed": {"bg": ("Слушането продължава", ""), "en": ("Listening resumed", "")},
     "stop_phrase": {"bg": ("Край на разговора: „{phrase}“", "увереност {conf}"), "en": ("Conversation ended: “{phrase}”", "confidence {conf}")},
@@ -152,6 +160,22 @@ MESSAGES = {
     "busy_limit": {"bg": ("Codex работи над {minutes} минути", "тишината отново затваря разговора"), "en": ("Codex has been working for over {minutes} minutes", "silence closes the conversation again")},
     "words_unknown": {"bg": ("Моделът за {language} не познава: {words}", "тези думи няма да се разпознават"),
                       "en": ("The {language} model does not know: {words}", "these words will not be recognized")},
+    "keys_ok": {"bg": ("Shortcut-ите на Codex са наред", "гласов чат {voice}, диктовка {dictation}"),
+                "en": ("Codex shortcuts are set", "voice chat {voice}, dictation {dictation}")},
+    "keys_added": {"bg": ("Hark добави shortcut-и в Codex: {commands}", "рестартирайте Codex, за да ги прочете"),
+                   "en": ("Hark added Codex shortcuts: {commands}", "restart Codex so it picks them up")},
+    "keys_conflict": {"bg": ("Клавишът в Codex е зает от друга команда: {conflicts}", "задайте shortcut ръчно в настройките на Codex"),
+                      "en": ("A key in Codex is used by another command: {conflicts}", "set the shortcut by hand in Codex settings")},
+    "keys_invalid": {"bg": ("Файлът keybindings.json на Codex не може да се прочете", "Hark не го промени"),
+                     "en": ("Codex's keybindings.json cannot be read", "Hark did not change it")},
+    "keys_no_codex": {"bg": ("Папката на Codex не е намерена", "стартирайте Codex поне веднъж"),
+                      "en": ("The Codex folder was not found", "start Codex at least once")},
+    "keys_error": {"bg": ("Hark не успя да запише keybindings.json на Codex", "{error}"),
+                   "en": ("Hark could not write Codex's keybindings.json", "{error}")},
+    "wake_chatgpt": {"bg": ("ChatGPT: „{phrase}“ → гласов разговор", "увереност {conf}"), "en": ("ChatGPT: “{phrase}” → voice conversation", "confidence {conf}")},
+    "wake_chatgpt_dictation": {"bg": ("ChatGPT: „{phrase}“ → диктовка", "увереност {conf}"), "en": ("ChatGPT: “{phrase}” → dictation", "confidence {conf}")},
+    "chatgpt_stopped": {"bg": ("ChatGPT: край на разговора „{phrase}“", "увереност {conf}"), "en": ("ChatGPT: conversation ended “{phrase}”", "confidence {conf}")},
+    "chatgpt_missing": {"bg": ("ChatGPT Classic не е намерен или не е влязъл в профила", "инсталирайте го и влезте"), "en": ("ChatGPT Classic was not found or is not signed in", "install it and sign in")},
     "settings_saved": {"bg": ("Настройките са запазени", ""), "en": ("Settings saved", "")},
 }
 ERRORS = {
@@ -200,11 +224,21 @@ CODEX_MIC_KEY = (r"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessMan
 DICTATE_BUTTON = "Dictate"
 STOP_DICTATION_BUTTON = "Stop dictation"  # present while dictation is running; inserts the text
 SEND_DICTATION_BUTTON = "Transcribe and send"  # ends dictation and sends the text to the agent
+# ChatGPT Classic (package OpenAI.ChatGPT-Desktop): buttons of its message box, found through UI Automation.
+CLASSIC_PROCESS = "chatgpt classic.exe"
+CLASSIC_APP = r"shell:AppsFolder\OpenAI.ChatGPT-Desktop_2p2nqsd0c76g0!ChatGPT"
+CLASSIC_VOICE_BUTTON = "Start Voice"
+CLASSIC_END_VOICE_BUTTON = "End Voice"
+CLASSIC_CANCEL_LOADING_BUTTON = "Cancel loading"  # in place of End Voice while the voice conversation starts (about 10 s)
+CLASSIC_DICTATE_BUTTON = "Start dictation"
+CLASSIC_SUBMIT_DICTATION_BUTTON = "Submit dictation"  # ends dictation and leaves the text in the message box
+CLASSIC_CANCEL_DICTATION_BUTTON = "Cancel dictation"  # present while dictation is running
+CLASSIC_START_S = 15  # how long to wait for ChatGPT Classic to open its message box
 MIC_RETRY_S = 10
 CHAT_WAIT_S = 1.0  # a bare wake word waits this long in case another language heard a full command
 BUSY_MAX_S = 300  # after this long the silence rule applies again, in case a turn never finishes
 
-VK_MENU, VK_Z, KEYUP = 0x12, 0x5A, 0x0002
+KEYUP = 0x0002
 user32 = ctypes.windll.user32
 
 
@@ -223,8 +257,8 @@ def _clean_words(value):
 
 
 def _word_error(key, words, code, known_word, msg):
-    """The message for the first problem in one word list, or None. Only wake_words may hold phrases."""
-    limit = MAX_PHRASE_WORDS if key == "wake_words" else 1
+    """The message for the first problem in one word list, or None. Only the wake word lists may hold phrases."""
+    limit = MAX_PHRASE_WORDS if key in PHRASE_LISTS else 1
     long = ", ".join(w for w in words if len(w.split()) > limit)
     if long:
         return msg("too_long", n=limit, words=long) if limit > 1 else msg("one_word", words=long)
@@ -406,6 +440,22 @@ def suggest_threshold(quiet_levels, speech_levels):
     return int(round(quiet + (speech - quiet) / 3))
 
 
+def window_rect(area_x, area_y, area_width, area_height, want=(880, 600)):
+    """Where the window opens, in logical pixels: the wanted size, but at most 90% of the work area (the screen
+    without the taskbar), centered in it. Returns (x, y, width, height)."""
+    width, height = min(want[0], area_width * 90 // 100), min(want[1], area_height * 90 // 100)
+    return area_x + (area_width - width) // 2, area_y + (area_height - height) // 2, width, height
+
+
+# The only addresses the window may open in the browser (About screen).
+ABOUT_LINKS = ("https://ivanyosifov.com", "https://github.com/id-yo/codex-hark")
+
+
+def about_link(url):
+    """Is this one of the project's own addresses? Case and a trailing slash do not matter."""
+    return isinstance(url, str) and url.rstrip("/").lower() in ABOUT_LINKS
+
+
 def input_devices():
     """Microphones of the default host API (MME) by name."""
     try:
@@ -465,11 +515,102 @@ def acquire_single_instance():
     return ctypes.windll.kernel32.GetLastError() != 183
 
 
-def press_alt_z():
-    user32.keybd_event(VK_MENU, 0, 0, 0)
-    user32.keybd_event(VK_Z, 0, 0, 0)
-    user32.keybd_event(VK_Z, 0, KEYUP, 0)
-    user32.keybd_event(VK_MENU, 0, KEYUP, 0)
+# Codex has no default key for these commands on Windows, so Hark checks that they are set (keybindings.json).
+CODEX_KEYS = {"realtimeVoice": "Alt+Z", "globalDictationHold": "Alt+X"}
+MODIFIER_CODES = {"alt": 0x12, "option": 0x12, "ctrl": 0x11, "control": 0x11, "commandorcontrol": 0x11,
+                  "cmdorctrl": 0x11, "shift": 0x10, "win": 0x5B, "meta": 0x5B, "super": 0x5B}
+
+
+def keybindings_path():
+    """Codex's keybindings.json: [{"command": "realtimeVoice", "key": "Alt+Z"}, ...]."""
+    home = os.environ.get("CODEX_HOME") or os.path.join(os.path.expanduser("~"), ".codex")
+    return os.path.join(home, "keybindings.json")
+
+
+def check_codex_keys(path=None, fix=False):
+    """Check that Codex has a key for voice chat and dictation; with fix, add the ones that are missing.
+
+    Returns {"status", "path", "keys", "added", "conflicts"}. status: ok, missing (not fixed), added,
+    conflict (a default key is used by another command), no_codex, invalid (left untouched) or error.
+    Keys the user chose are never replaced, and the other entries of the file stay as they are.
+    """
+    path = path or keybindings_path()
+    result = {"status": "ok", "path": path, "keys": {}, "added": [], "conflicts": {}}
+    if not os.path.isdir(os.path.dirname(path)):
+        return {**result, "status": "no_codex"}
+    entries = []
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+            entries = json.loads(text) if text.strip() else []
+            if not isinstance(entries, list) or not all(isinstance(e, dict) and isinstance(e.get("command"), str) for e in entries):
+                raise ValueError("not a list of commands")
+        except (OSError, ValueError):
+            return {**result, "status": "invalid"}
+    keys = {c: next((e["key"] for e in entries if e["command"] == c and isinstance(e.get("key"), str) and e["key"]), None)
+            for c in CODEX_KEYS}
+    taken = {e["key"].lower(): e["command"] for e in entries if isinstance(e.get("key"), str)}
+    conflicts = {c: taken[CODEX_KEYS[c].lower()] for c in CODEX_KEYS
+                 if not keys[c] and taken.get(CODEX_KEYS[c].lower(), c) != c}
+    missing = [c for c in CODEX_KEYS if not keys[c] and c not in conflicts]
+    result.update(keys=keys, conflicts=conflicts)
+    if not fix or not missing:
+        result["status"] = "conflict" if conflicts else "missing" if missing else "ok"
+        return result
+    for command in missing:
+        slot = next((e for e in entries if e["command"] == command and not e.get("key")), None)
+        if slot is not None:
+            slot["key"] = CODEX_KEYS[command]
+        else:
+            entries.append({"command": command, "key": CODEX_KEYS[command]})
+        keys[command] = CODEX_KEYS[command]
+    try:
+        if os.path.exists(path):
+            shutil.copyfile(path, path + ".hark-backup")
+        with open(path + ".hark-tmp", "w", encoding="utf-8") as f:
+            f.write(json.dumps(entries, indent=2) + "\n")
+        os.replace(path + ".hark-tmp", path)
+    except OSError as e:
+        return {**result, "status": "error", "error": str(e), "keys": {c: None for c in CODEX_KEYS}}
+    return {**result, "status": "conflict" if conflicts else "added", "added": missing}
+
+
+def codex_hotkeys():
+    """The keys Codex has for voice chat and dictation now; the ones Hark sets when a key is not there."""
+    keys = check_codex_keys()["keys"]
+    return {"voice": keys.get("realtimeVoice") or CODEX_KEYS["realtimeVoice"],
+            "dictation": keys.get("globalDictationHold") or CODEX_KEYS["globalDictationHold"]}
+
+
+def parse_hotkey(spec):
+    """Virtual-key codes of a key such as "Alt+Z", "Ctrl+Shift+V" or "F9" (modifiers first); None if unknown."""
+    codes = []
+    parts = [p.strip() for p in str(spec).split("+")]
+    for part in parts[:-1]:
+        if part.lower() not in MODIFIER_CODES:
+            return None
+        codes.append(MODIFIER_CODES[part.lower()])
+    key = parts[-1]
+    if len(key) == 1 and key.isascii() and key.isalnum():
+        codes.append(ord(key.upper()))
+    elif re.fullmatch(r"[Ff](\d{1,2})", key) and 1 <= int(key[1:]) <= 24:
+        codes.append(0x70 + int(key[1:]) - 1)
+    else:
+        return None
+    return codes
+
+
+def press_voice_chat():
+    """Press Codex's voice chat key (Alt+Z unless Codex has another one)."""
+    codes = parse_hotkey(codex_hotkeys()["voice"])
+    if codes is None:
+        logging.warning("cannot press the voice chat key of Codex; using Alt+Z")
+        codes = parse_hotkey(CODEX_KEYS["realtimeVoice"])
+    for code in codes:
+        user32.keybd_event(code, 0, 0, 0)
+    for code in reversed(codes):
+        user32.keybd_event(code, 0, KEYUP, 0)
 
 
 def beep():
@@ -493,7 +634,8 @@ def codex_talking(peak):
     return False
 
 
-def codex_windows():
+def app_windows(process):
+    """Visible top-level windows of the program with this file name (lower case)."""
     found = []
 
     @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
@@ -502,7 +644,7 @@ def codex_windows():
             pid = ctypes.c_ulong()
             user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
             try:
-                if psutil.Process(pid.value).name().lower() == CODEX_PROCESS:
+                if psutil.Process(pid.value).name().lower() == process:
                     found.append(hwnd)
             except psutil.Error:
                 pass
@@ -512,14 +654,18 @@ def codex_windows():
     return found
 
 
-def heard(result_json, words, min_conf):
+def codex_windows():
+    return app_windows(CODEX_PROCESS)
+
+
+def heard(result_json, words, min_conf, key="wake_words"):
     """Return (wake word or phrase, the word after it, confidence) for a final Vosk result of one language.
 
     A wake phrase such as "hey jarvis" must be heard as all of its words in a row; its confidence is the
     mean of theirs. Longer phrases win over shorter ones that start at the same word.
     """
     found = json.loads(result_json).get("result", [])
-    phrases = sorted((p.split() for p in words["wake_words"]), key=len, reverse=True)
+    phrases = sorted((p.split() for p in words[key]), key=len, reverse=True)
     for i in range(len(found)):
         for phrase in phrases:
             part = found[i:i + len(phrase)]
@@ -599,6 +745,7 @@ class Listener:
         self._reset_busy()
         self.models = {}  # language -> loaded Vosk model
         self._send = True  # the dictation in progress is sent (True) or left as a draft (False)
+        self._classic = False  # the dictation in progress is in ChatGPT Classic, not in Codex
         self._uia = None
 
     def stop(self):
@@ -609,16 +756,16 @@ class Listener:
             self.state = state
             self.on_state(state)
 
-    def _find_button(self, name, tries=1):
-        """Find a Codex button by its accessible name; Chromium builds the tree on first use."""
+    def _find_button(self, name, tries=1, process=CODEX_PROCESS, button=True):
+        """Find a button of Codex (or another Chromium app) by its accessible name; Chromium builds the tree on first use."""
         if self._uia is None:
             self._uia = comtypes.client.CreateObject(CUIAutomation, interface=IUIAutomation)
         uia = self._uia
-        cond = uia.CreateAndCondition(
-            uia.CreatePropertyCondition(UIA_NamePropertyId, name),
-            uia.CreatePropertyCondition(UIA_ControlTypePropertyId, UIA_ButtonControlTypeId))
+        cond = uia.CreatePropertyCondition(UIA_NamePropertyId, name)
+        if button:
+            cond = uia.CreateAndCondition(cond, uia.CreatePropertyCondition(UIA_ControlTypePropertyId, UIA_ButtonControlTypeId))
         for attempt in range(tries):
-            for hwnd in codex_windows():
+            for hwnd in app_windows(process):
                 try:
                     button = uia.ElementFromHandle(hwnd).FindFirst(TreeScope_Descendants, cond)
                 except COMError:
@@ -629,12 +776,55 @@ class Listener:
                 time.sleep(0.3)
         return None
 
-    def _click(self, name):
-        button = self._find_button(name, tries=3)
+    def _click(self, name, process=CODEX_PROCESS):
+        button = self._find_button(name, tries=3, process=process)
         if not button:
             return False
         button.GetCurrentPattern(UIA_InvokePatternId).QueryInterface(IUIAutomationInvokePattern).Invoke()
         return True
+
+    def _open_classic(self):
+        """Make sure ChatGPT Classic runs with its message box showing; True when it does."""
+        if self._find_button(CLASSIC_VOICE_BUTTON, process=CLASSIC_PROCESS):
+            return True
+        if not app_windows(CLASSIC_PROCESS):
+            subprocess.Popen(["explorer.exe", CLASSIC_APP])
+        deadline = time.monotonic() + CLASSIC_START_S
+        while time.monotonic() < deadline and not self.stopped.is_set():
+            if self._find_button(CLASSIC_VOICE_BUTTON, process=CLASSIC_PROCESS):
+                return True
+            if self._find_button("Meet the new ChatGPT", process=CLASSIC_PROCESS, button=False):
+                self._click("Close", CLASSIC_PROCESS)  # an offer that covers the message box
+            time.sleep(0.5)
+        return False
+
+    def _chatgpt(self, words, wake, following, conf, can_start):
+        """A chat command: a voice conversation, dictation or the end of the conversation in ChatGPT Classic.
+        Returns "dictation" or "chat" for what it started, None when it started nothing."""
+        ev = self.events
+        phrase = f"{wake}, {following}" if following else wake
+        if following in words["stop_words"]:
+            if any(self._click(b, CLASSIC_PROCESS) for b in (CLASSIC_END_VOICE_BUTTON, CLASSIC_CANCEL_LOADING_BUTTON)):
+                ev.add("chat", "chatgpt_stopped", phrase=phrase, conf=f"{conf:.2f}")
+            return None
+        if not can_start or any(self._find_button(b, process=CLASSIC_PROCESS)
+                                for b in (CLASSIC_END_VOICE_BUTTON, CLASSIC_CANCEL_LOADING_BUTTON)):
+            return None  # a conversation is already running
+        dictate = following in words["send_words"] + words["draft_words"] and self.s["dictation_enabled"]
+        button = CLASSIC_DICTATE_BUTTON if dictate else CLASSIC_VOICE_BUTTON
+        if not self._open_classic():
+            ev.add("error", "chatgpt_missing")
+            self.on_problem("chatgpt")
+            return None
+        if self.s["beep"]:
+            beep()
+        if not self._click(button, CLASSIC_PROCESS):
+            ev.add("error", "button_missing", button=button)
+            return None
+        ev.add("dictation" if dictate else "chat", "wake_chatgpt_dictation" if dictate else "wake_chatgpt",
+               phrase=phrase, conf=f"{conf:.2f}")
+        self._classic = dictate
+        return "dictation" if dictate else "chat"
 
     def run(self):
         comtypes.CoInitialize()
@@ -709,18 +899,19 @@ class Listener:
                 r.Reset()
 
         def recognize(data):
-            """Every wake phrase heard in this block, one per language: [(words, wake, following, conf)]."""
+            """Every wake phrase heard in this block, per language and target: [(words, wake, following, conf, target)]."""
             hits = []
             for lang, r in recs:
                 if r.AcceptWaveform(data):
-                    words = s["languages"][lang]
-                    wake, following, conf = heard(r.Result(), words, s["min_conf"])
-                    if wake:
-                        hits.append((words, wake, following, conf))
+                    words, result = s["languages"][lang], r.Result()
+                    for target, key in (("codex", "wake_words"), ("chatgpt", "chat_words")):
+                        wake, following, conf = heard(result, words, s["min_conf"], key)
+                        if wake and (target == "codex" or s["chatgpt_enabled"]):
+                            hits.append((words, wake, following, conf, target))
             return hits
 
         def is_command(hit):
-            words, _, following, _ = hit
+            words, following = hit[0], hit[2]
             return following in words["send_words"] + words["draft_words"] + words["stop_words"]
 
         pending = None  # (time, hit): a bare wake word waiting for a fuller command from another language
@@ -745,8 +936,9 @@ class Listener:
                     if rms > s["speech_rms"]:
                         last_sound = now
                     if now - last_sound > s["dictation_idle_seconds"]:
-                        button = SEND_DICTATION_BUTTON if self._send else STOP_DICTATION_BUTTON
-                        if self._click(button):
+                        button = (CLASSIC_SUBMIT_DICTATION_BUTTON if self._classic
+                                  else SEND_DICTATION_BUTTON if self._send else STOP_DICTATION_BUTTON)
+                        if self._click(button, CLASSIC_PROCESS if self._classic else CODEX_PROCESS):
                             kind = "sent" if self._send else "inserted"
                             ev.add(kind, kind, seconds=f"{s['dictation_idle_seconds']:g}")
                         else:
@@ -755,7 +947,8 @@ class Listener:
                         continue
                     else:
                         last_check = now
-                        if self._find_button(STOP_DICTATION_BUTTON):
+                        if self._find_button(CLASSIC_CANCEL_DICTATION_BUTTON if self._classic else STOP_DICTATION_BUTTON,
+                                             process=CLASSIC_PROCESS if self._classic else CODEX_PROCESS):
                             continue
                         ev.add("dictation", "dictation_stopped")
                     mode, last, ignore_until = None, now, now + 3
@@ -778,11 +971,11 @@ class Listener:
                         continue
                     # During a conversation only the stop phrase is acted on.
                     hits = recognize(bytes(data)) if s["stop_enabled"] else []
-                    hit = next((h for h in hits if h[2] in h[0]["stop_words"]), None)
+                    hit = next((h for h in hits if h[4] == "codex" and h[2] in h[0]["stop_words"]), None)
                     if hit:
                         _, wake, following, conf = hit
                         ev.add("chat", "stop_phrase", phrase=f"{wake}, {following}", conf=f"{conf:.2f}")
-                        press_alt_z()
+                        press_voice_chat()
                         last_sound = now
                         ignore_until = now + 2
                         continue
@@ -790,7 +983,7 @@ class Listener:
                         last_sound = now
                     elif s["idle_close"] and now - last_sound > s["idle_seconds"]:
                         ev.add("chat", "chat_closing", seconds=f"{s['idle_seconds']:g}")
-                        press_alt_z()
+                        press_voice_chat()
                         last_sound = now  # do not press again while Codex closes the chat
                     continue
                 if mode is not None:
@@ -812,7 +1005,15 @@ class Listener:
                     hit, pending = pending[1], None
                 else:
                     continue
-                words, wake, following, conf = hit
+                words, wake, following, conf, target = hit
+                if target == "chatgpt":
+                    started = self._chatgpt(words, wake, following, conf, can_start=now - last > s["cooldown_seconds"])
+                    if started:
+                        last = now
+                        if started == "dictation":
+                            mode, last_sound, last_check = "dictation", now, now
+                            self._set("dictation")
+                    continue
                 if following in words["stop_words"] or now - last <= s["cooldown_seconds"]:
                     continue
                 send = following in words["send_words"]
@@ -824,11 +1025,11 @@ class Listener:
                     beep()
                 if not dictate:
                     ev.add("chat", "wake_chat", phrase=wake, conf=f"{conf:.2f}")
-                    press_alt_z()
+                    press_voice_chat()
                 elif self._click(DICTATE_BUTTON):
                     ev.add("dictation", "wake_dictation" if send else "wake_draft",
                            phrase=f"{wake}, {following}", conf=f"{conf:.2f}")
-                    self._send = send
+                    self._send, self._classic = send, False
                     mode, last_sound, last_check = "dictation", now, now
                     self._set("dictation")
                 else:
