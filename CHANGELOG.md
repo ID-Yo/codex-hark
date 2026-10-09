@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-09
+
+### Added
+- Voice commands > Voice chat > "Conversations go to": a new chat each time (as before), one chat you pick, or a new chat in one project you pick. Hark opens the chat or project in Codex (codex:// link) before it presses the voice chat key, so the conversations collect there.
+
 ## [0.10.0] - 2026-10-09
 
 ### Changed

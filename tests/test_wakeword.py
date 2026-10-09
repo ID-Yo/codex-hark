@@ -126,6 +126,46 @@ def langs(**bg):
     return {"languages": {"bg": {**BG, **bg}}}
 
 
+class ChatTargetTests(unittest.TestCase):
+    TID = "01a11c4d-6c99-74f0-a01c-247f18944f21"
+
+    def test_link_for_each_target(self):
+        self.assertIsNone(ww.chat_target_url({"chat_target": "new", "chat_thread": self.TID}))
+        self.assertEqual(ww.chat_target_url({"chat_target": "thread", "chat_thread": self.TID}), "codex://threads/" + self.TID)
+        self.assertEqual(ww.chat_target_url({"chat_target": "project", "chat_project": "D:\\Coding\\General"}),
+                         "codex://threads/new?path=D%3A%5CCoding%5CGeneral")
+        self.assertIsNone(ww.chat_target_url({"chat_target": "thread", "chat_thread": ""}))
+
+    def test_validation_refuses_unknown_targets_and_bad_ids(self):
+        _, errors = ww.validate_settings({"chat_target": "chatgpt", "chat_thread": "x/../settings"}, lang="en")
+        self.assertEqual(set(errors), {"chat_target", "chat_thread"})
+        settings, errors = ww.validate_settings({"chat_target": "thread", "chat_thread": self.TID}, lang="en")
+        self.assertEqual((errors, settings["chat_thread"]), ({}, self.TID))
+
+    def test_reads_recent_chats_and_projects(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "state_5.sqlite")
+            con = sqlite3.connect(db)
+            con.executescript("""
+                create table threads (id, name, title, cwd, archived, source, recency_at_ms, updated_at_ms);
+                create table projects (id, name, position);
+                create table project_roots (project_id, position, path);
+                insert into projects values ('p1', 'General', 0);
+                insert into project_roots values ('p1', 0, '\\\\?\\D:\\Coding\\General');
+            """)
+            rows = [("a", "Codex voice", "first message", "D:\\Coding\\General", 0, "vscode", 3, 0),
+                    ("b", None, "old chat", "D:\\x", 0, "vscode", 1, 0),
+                    ("c", "Archived", "", "D:\\x", 1, "vscode", 5, 0),
+                    ("d", "Helper", "", "D:\\x", 0, '{"subagent": {}}', 4, 0)]
+            con.executemany("insert into threads values (?, ?, ?, ?, ?, ?, ?, ?)", rows)
+            con.commit()
+            con.close()
+            found = ww.codex_targets(db)
+        self.assertEqual([(t["id"], t["title"], t["folder"]) for t in found["threads"]],
+                         [("a", "Codex voice", "General"), ("b", "old chat", "x")])
+        self.assertEqual(found["projects"], [{"name": "General", "path": "D:\\Coding\\General"}])
+
+
 class ValidateSettingsTests(unittest.TestCase):
     def test_defaults_are_valid(self):
         self.assertEqual(ww.validate_settings(ww.DEFAULTS), (ww.DEFAULTS, {}))

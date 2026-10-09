@@ -233,6 +233,10 @@ class Api:
         found = [{"word": w, "known": known(lang, w)} for w in words]
         return {"status": "ok" if all(f["known"] for f in found) else "unknown", "words": found}
 
+    def codex_targets(self):
+        """Recent Codex chats and the projects, for choosing where voice chats go."""
+        return ww.codex_targets()
+
     def check_keys(self):
         """The Settings button: check Codex's keybindings now and add the ones Hark needs."""
         return self._app.check_keys()
@@ -251,7 +255,7 @@ class Api:
         return autostart_command() is not None
 
     def test_chat(self):
-        ww.press_voice_chat()
+        ww.start_voice_chat(self._app.settings)
         return True
 
     def measure(self, seconds):
