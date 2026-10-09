@@ -237,6 +237,14 @@ class Api:
         """Recent Codex chats and the projects, for choosing where voice chats go."""
         return ww.codex_targets()
 
+    def check_updates(self):
+        """The Settings button: look for a new version now."""
+        return self._app.check_updates(manual=True)
+
+    def last_update(self):
+        """The result of the last automatic check (None before the first)."""
+        return self._app.update
+
     def check_keys(self):
         """The Settings button: check Codex's keybindings now and add the ones Hark needs."""
         return self._app.check_keys()
@@ -314,6 +322,7 @@ class App:
         self.quitting = False
         self.crashes = []
         self.last_notice = {}
+        self.update = None  # the last update check result for the window
         self._codex = (0.0, False)
         self.images = {state: make_image(color) for state, color in COLORS.items()}
         t = self.t
@@ -431,6 +440,37 @@ class App:
             ww.save_settings({**ww.load_settings(), "keys_checked": True})
         return {"status": status, "text": message, "hotkeys": hotkeys}
 
+    def check_updates(self, manual=False):
+        """Ask GitHub for the newest public release; tell the user when it is newer. Returns the result for the window."""
+        current = ww.__version__
+        try:
+            latest = ww.latest_release()
+            status = ww.update_status(latest["version"], current)
+            args = {"version": latest["version"], "current": current}
+        except (OSError, ValueError) as e:
+            latest, status, args = {"url": ""}, "error", {"error": str(e), "current": current}
+        code = "update_" + {"new": "available"}.get(status, status)
+        text, detail = ww.message(code, self.lang(), **args)
+        if manual or status == "new":
+            self.events.add("error" if status == "error" else "settings", code, **args)
+        if status == "new":
+            self.notify(code, f"{text} — {detail}")
+        else:
+            logging.info("update check: %s %s", text, detail)
+        self.update = {"status": status, "text": f"{text} — {detail}" if detail else text,
+                       "version": args.get("version", ""), "url": latest.get("url", "")}
+        return self.update
+
+    def watch_updates(self):
+        """Check for a new version a minute after start and then every 12 hours, while the setting is on."""
+        next_check = time.monotonic() + ww.UPDATE_FIRST_DELAY_S
+        while not self.quitting:
+            time.sleep(5)
+            if time.monotonic() >= next_check:
+                next_check = time.monotonic() + ww.UPDATE_INTERVAL_S
+                if self.settings.get("update_check", True):
+                    self.check_updates()
+
     def show(self):
         if self.window:
             self.window.show()
@@ -534,6 +574,7 @@ class App:
         self.icon.run_detached()
         threading.Thread(target=self.supervise, name="listener", daemon=True).start()
         threading.Thread(target=self.watch_second_launch, name="show", daemon=True).start()
+        threading.Thread(target=self.watch_updates, name="updates", daemon=True).start()
         icon = os.path.join(ww.DATA_DIR, "icon.ico")
         save_icon(icon)
         webview.start(private_mode=True, storage_path=os.path.join(ww.DATA_DIR, "webview"), icon=icon)
