@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.11.1"
+__version__ = "0.12.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -155,6 +155,7 @@ DEFAULTS = {
     "notifications": True,
     "theme": "system",
     "language": "auto",  # auto: Bulgarian when Windows is in Bulgarian, otherwise English
+    "update_check": True,  # look for a new release on GitHub after start and every UPDATE_INTERVAL_S
     "keys_checked": False,  # the first-run check of Codex's shortcuts has been done
 }
 # Allowed range of each number setting.
@@ -198,6 +199,9 @@ MESSAGES = {
     "busy_limit": {"bg": ("Codex работи над {minutes} минути", "тишината отново затваря разговора"), "en": ("Codex has been working for over {minutes} minutes", "silence closes the conversation again")},
     "words_unknown": {"bg": ("Моделът за {language} не познава: {words}", "тези думи няма да се разпознават"),
                       "en": ("The {language} model does not know: {words}", "these words will not be recognized")},
+    "update_available": {"bg": ("Има нова версия: {version}", "имате {current}"), "en": ("A new version is available: {version}", "you have {current}")},
+    "update_current": {"bg": ("Hark е последна версия", "{current}"), "en": ("Hark is up to date", "{current}")},
+    "update_error": {"bg": ("Проверката за нова версия не успя", "{error}"), "en": ("The update check failed", "{error}")},
     "keys_ok": {"bg": ("Shortcut-ите на Codex са наред", "гласов чат {voice}, диктовка {dictation}"),
                 "en": ("Codex shortcuts are set", "voice chat {voice}, dictation {dictation}")},
     "keys_added": {"bg": ("Hark добави shortcut-и в Codex: {commands}", "рестартирайте Codex, за да ги прочете"),
@@ -493,8 +497,38 @@ ABOUT_LINKS = ("https://ivanyosifov.com", "https://github.com/id-yo/codex-hark")
 
 
 def about_link(url):
-    """Is this one of the project's own addresses? Case and a trailing slash do not matter."""
-    return isinstance(url, str) and url.rstrip("/").lower() in ABOUT_LINKS
+    """Is this one of the project's own addresses (or one of its releases)? Case and a trailing slash do not matter."""
+    return isinstance(url, str) and (url.rstrip("/").lower() in ABOUT_LINKS or bool(RELEASE_PAGE.fullmatch(url.lower())))
+
+
+LATEST_RELEASE_API = "https://api.github.com/repos/ID-Yo/codex-hark/releases/latest"
+RELEASE_PAGE = re.compile(r"https://github\.com/id-yo/codex-hark/releases/tag/v\d+(\.\d+){1,3}")
+UPDATE_INTERVAL_S = 12 * 3600  # two checks a day
+UPDATE_FIRST_DELAY_S = 60  # the first check, after start
+
+
+def version_tuple(text):
+    """ "v0.11.1" -> (0, 11, 1); None if it is not a version."""
+    m = re.fullmatch(r"v?(\d+(?:\.\d+){1,3})", text.strip())
+    return tuple(int(p) for p in m.group(1).split(".")) if m else None
+
+
+def latest_release(timeout=15):
+    """The newest public release: {"version": "0.12.0", "url": release page}. Raises OSError/ValueError on failure."""
+    request = urllib.request.Request(LATEST_RELEASE_API, headers={
+        "Accept": "application/vnd.github+json", "User-Agent": f"CodexHark/{__version__}"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        data = json.loads(response.read().decode("utf-8"))
+    version = version_tuple(str(data.get("tag_name", "")))
+    if version is None:
+        raise ValueError(f"unexpected release tag {data.get('tag_name')!r}")
+    url = str(data.get("html_url", ""))
+    return {"version": ".".join(map(str, version)), "url": url if RELEASE_PAGE.fullmatch(url.lower()) else ""}
+
+
+def update_status(latest, current=None):
+    """ "new" if the release is newer than this build, otherwise "current"."""
+    return "new" if version_tuple(latest) > version_tuple(current or __version__) else "current"
 
 
 def input_devices():

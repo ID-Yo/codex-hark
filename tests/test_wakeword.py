@@ -178,6 +178,36 @@ class ChatTargetTests(unittest.TestCase):
         self.assertEqual(found["projects"], [{"name": "General", "path": "D:\\Coding\\General"}])
 
 
+class UpdateCheckTests(unittest.TestCase):
+    def test_versions_compare_as_numbers(self):
+        self.assertEqual(ww.version_tuple("v0.11.1"), (0, 11, 1))
+        self.assertIsNone(ww.version_tuple("latest"))
+        self.assertEqual(ww.update_status("0.10.0", "0.9.9"), "new")
+        self.assertEqual(ww.update_status("0.11.1", "0.11.1"), "current")
+        self.assertEqual(ww.update_status("0.11.1", "0.12.0"), "current")
+        self.assertEqual(ww.update_status("1.0.0.1", "1.0.0"), "new")
+
+    def test_reads_the_latest_release_and_only_trusts_its_own_release_page(self):
+        class Response:
+            def __init__(self, data):
+                self.data = json.dumps(data).encode()
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+            def read(self):
+                return self.data
+        page = "https://github.com/ID-Yo/codex-hark/releases/tag/v0.13.0"
+        with patch.object(ww.urllib.request, "urlopen", return_value=Response({"tag_name": "v0.13.0", "html_url": page})):
+            self.assertEqual(ww.latest_release(), {"version": "0.13.0", "url": page})
+        with patch.object(ww.urllib.request, "urlopen", return_value=Response({"tag_name": "v0.13.0", "html_url": "https://evil.example/x"})):
+            self.assertEqual(ww.latest_release()["url"], "")
+        with patch.object(ww.urllib.request, "urlopen", return_value=Response({"tag_name": "nightly"})):
+            self.assertRaises(ValueError, ww.latest_release)
+        self.assertTrue(ww.about_link(page))
+        self.assertFalse(ww.about_link(page + "/../../x"))
+
+
 class ValidateSettingsTests(unittest.TestCase):
     def test_defaults_are_valid(self):
         self.assertEqual(ww.validate_settings(ww.DEFAULTS), (ww.DEFAULTS, {}))

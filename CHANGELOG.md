@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-09
+
+### Added
+- Update check: Hark asks GitHub for the newest public release a minute after start and every 12 hours, and shows a notification with a download link when there is a newer version. **Settings > New versions** has the on/off switch (on by default) and a **Check now** button. Hark does not download or install anything by itself.
+
 ## [0.11.1] - 2026-10-09
 
 ### Fixed
