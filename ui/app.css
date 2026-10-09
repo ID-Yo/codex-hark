@@ -105,6 +105,11 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 input[type="range"] { width: 100%; accent-color: var(--primary); margin: 4px 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .chip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 4px 0 11px; border-radius: 99px; background: var(--selected); font-weight: 600; font-size: 13px; }
+.chip.bad { background: var(--error-soft); color: var(--error); }
+.word-check { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.word-check .icon { width: 14px; height: 14px; flex: none; }
+.word-check.ok { color: var(--good); }
+.word-check.bad { color: var(--error); }
 .chip button { width: 22px; height: 22px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); display: grid; place-items: center; font-size: 15px; line-height: 1; }
 .chip button:hover { background: var(--tonal); color: var(--ink); }
 .chip-add { height: 30px; border: 1px dashed var(--control-border); border-radius: 99px; background: transparent; color: var(--primary); font-weight: 600; font-size: 13px; padding: 0 11px; }

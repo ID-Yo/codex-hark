@@ -27,6 +27,9 @@ const I18N = {
     sensitivity: "Чувствителност", sensHelp: "По-висока стойност дава по-малко фалшиви задействания, но трябва да говорите по-ясно.",
     minConf: "Минимална увереност", cooldown: "Пауза след задействане", decoys: "Близки думи ({n})", decoysHelp: "Думи, които звучат подобно и поемат почти-попаденията, за да не се задейства слушателят.",
     add: "+ Добави", newWord: "нова дума", remove: "Премахни {w}",
+    checking: "Проверка…", wordOk: "Моделът познава: {w}", noModel: "Моделът за този език още не е изтеглен — думите не могат да се проверят.",
+    wordUnknown: "Моделът не познава: {w}. Опитайте друга дума или правопис, който звучи същото.", wordUnknownRu: "Моделът не познава: {w}. Българският слот ползва руски модел — пишете думата с руски правопис.",
+    oneWord: "Тук се допуска само една дума.", tooLong: "Фразата може да е най-много от {n} думи.", phraseHelp: "Може да е и фраза до {n} думи, напр. „хей кодекс“.", chipUnknown: "Моделът не познава: {w}. Тези думи няма да се разпознават.",
     unsaved: "Има незапазени промени.", discard: "Откажи", save: "Запази", saved: "Запазено.", fix: "Има грешки. Поправете ги и запазете отново.",
     micEyebrow: "Микрофон", micTitle: "Вход и прагове за тишина", micNote: "Говорете и гледайте лентата. Чертата е прагът, над който звукът се брои за говор.",
     microphone: "Микрофон", winDefault: "Микрофон по подразбиране на Windows", notConnected: "(не е свързан)", levelNow: "Ниво в момента", speechRms: "Праг за говор",
@@ -64,6 +67,9 @@ const I18N = {
     sensitivity: "Sensitivity", sensHelp: "A higher value means fewer false triggers, but you need to speak more clearly.",
     minConf: "Minimum confidence", cooldown: "Pause after a trigger", decoys: "Similar words ({n})", decoysHelp: "Words that sound alike and absorb near misses so the listener does not trigger.",
     add: "+ Add", newWord: "new word", remove: "Remove {w}",
+    checking: "Checking…", wordOk: "The model knows: {w}", noModel: "The model for this language is not downloaded yet, so the words cannot be checked.",
+    wordUnknown: "The model does not know: {w}. Try another word or a spelling that sounds the same.", wordUnknownRu: "The model does not know: {w}. The Bulgarian slot uses a Russian model, so write the word in Russian spelling.",
+    oneWord: "Only a single word is allowed here.", tooLong: "A phrase can have at most {n} words.", phraseHelp: "Can also be a phrase of up to {n} words, e.g. “hey codex”.", chipUnknown: "The model does not know: {w}. These words will not be recognized.",
     unsaved: "You have unsaved changes.", discard: "Discard", save: "Save", saved: "Saved.", fix: "Some values are invalid. Fix them and save again.",
     micEyebrow: "Microphone", micTitle: "Input and silence thresholds", micNote: "Speak and watch the bar. The mark is the threshold above which sound counts as speech.",
     microphone: "Microphone", winDefault: "Windows default microphone", notConnected: "(not connected)", levelNow: "Current level", speechRms: "Speech threshold",
@@ -93,7 +99,7 @@ const ui = {
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
-  filter: "all", query: "", calib: null, adding: null, wordsLang: "bg", models: null,
+  filter: "all", query: "", calib: null, adding: null, wordsLang: "bg", models: null, check: null, unknown: {},
 };
 
 // ---------- API ----------
@@ -125,14 +131,15 @@ function fixtureApi() {
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
   const limits = { min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.5.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.5.0", lang }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.6.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.6.0", lang }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }],
     download_model: async () => [], suggest_threshold: async () => 290, open_folder: async () => true, copy: async () => true,
+    check_words: async (lang, text) => { const bad = ['бобър', 'мозък', 'kodex', 'jarvizz']; const words = text.toLowerCase().split(/\s+/).filter(Boolean).map((w) => ({ word: w, known: !bad.includes(w) })); return { status: lang === 'en' && location.hash.includes('dl') ? 'no_model' : words.every((w) => w.known) ? 'ok' : 'unknown', words }; },
   };
 }
 let api = null;
@@ -185,14 +192,62 @@ function range(key, label, step, unit, help = "") {
 const idOf = (path) => path.replace(/\./g, "_");
 function getP(obj, path) { return path.split(".").reduce((o, k) => (o == null ? o : o[k]), obj); }
 function setP(obj, path, value) { const keys = path.split("."); const last = keys.pop(); keys.reduce((o, k) => o[k], obj)[last] = value; }
+// Wake words may be phrases ("hey codex"); every other list holds single words.
+const MAX_PHRASE = 3;
+const normWord = (s) => s.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+const langOfKey = (key) => key.split(".")[1];
+const isWake = (key) => key.endsWith(".wake_words");
+let checkTimer = 0, checkSeq = 0;
+function checkLine() {
+  const c = ui.check;
+  if (!c || c.key !== ui.adding) return "";
+  return '<small class="word-check ' + c.kind + '" role="status">' + (c.kind === "ok" ? icon("ok") : c.kind === "bad" ? icon("warn") : "") + esc(c.text) + "</small>";
+}
+function showCheck(kind, text) {
+  ui.check = kind ? { key: ui.adding, kind, text } : null;
+  const slot = $("#word-check-slot");
+  if (slot) slot.innerHTML = checkLine();
+}
+// What the model says about a typed word or phrase, before it is added or saved.
+async function checkWord(key, raw) {
+  const text = normWord(raw), words = text.split(" "), limit = isWake(key) ? MAX_PHRASE : 1;
+  if (words.length > limit) return { ok: false, kind: "bad", text: limit > 1 ? T("tooLong", { n: limit }) : L.oneWord };
+  const lang = langOfKey(key);
+  const r = await api.check_words(lang, text);
+  if (r.status === "no_model") return { ok: true, kind: "muted", text: L.noModel };
+  if (r.status === "unknown") return { ok: false, kind: "bad", text: T(lang === "bg" ? "wordUnknownRu" : "wordUnknown", { w: r.words.filter((x) => !x.known).map((x) => x.word).join(", ") }) };
+  return { ok: true, kind: "ok", text: T("wordOk", { w: text }) };
+}
+function scheduleCheck(key, value) {
+  clearTimeout(checkTimer);
+  const seq = ++checkSeq;
+  if (!normWord(value)) return showCheck(null);
+  checkTimer = setTimeout(async () => {
+    showCheck("muted", L.checking);
+    const r = await checkWord(key, value);
+    if (seq === checkSeq && ui.adding === key) showCheck(r.kind, r.text);
+  }, 350);
+}
+// Words of the saved lists that the model does not know: the listener silently ignores them.
+async function refreshUnknown(lang = ui.wordsLang) {
+  const lists = ["wake_words", "send_words", "draft_words", "stop_words", "decoys"];
+  const text = lists.flatMap((k) => getP(ui.saved, "languages." + lang + "." + k) || []).join(" ");
+  const r = await api.check_words(lang, text);
+  ui.unknown[lang] = r.status === "unknown" ? r.words.filter((x) => !x.known).map((x) => x.word) : [];
+  if (ui.screen === "commands" && !ui.adding) render();
+}
 function chips(key, label) {
   const words = getP(ui.draft, key);
+  const missing = ui.unknown[langOfKey(key)] || [];
+  const lost = [...new Set(words.flatMap((w) => w.split(" ")).filter((t) => missing.includes(t)))];
   const add = ui.adding === key
-    ? '<input class="chip-input" id="add-' + idOf(key) + '" data-add="' + key + '" placeholder="' + L.newWord + '" aria-label="' + L.newWord + '">'
+    ? '<input class="chip-input" id="add-' + idOf(key) + '" data-add="' + key + '" placeholder="' + L.newWord + '" aria-label="' + L.newWord + '" autocomplete="off">'
     : '<button class="chip-add" data-add-start="' + key + '">' + L.add + "</button>";
   return '<div class="field">' + (label ? '<span class="label">' + label + "</span>" : "") + '<div class="chips">' +
-    words.map((w, i) => '<span class="chip">' + esc(w) + '<button data-remove="' + key + '" data-i="' + i + '" aria-label="' + esc(T("remove", { w })) + '">×</button></span>').join("") +
-    add + "</div>" + err(key) + "</div>";
+    words.map((w, i) => '<span class="chip' + (w.split(" ").some((t) => missing.includes(t)) ? " bad" : "") + '">' + esc(w) + '<button data-remove="' + key + '" data-i="' + i + '" aria-label="' + esc(T("remove", { w })) + '">×</button></span>').join("") +
+    add + "</div>" + (ui.adding === key ? '<div id="word-check-slot">' + checkLine() + "</div>" : "") +
+    (isWake(key) ? "<small>" + T("phraseHelp", { n: MAX_PHRASE }) + "</small>" : "") +
+    (lost.length ? '<span class="error-text">' + esc(T("chipUnknown", { w: lost.join(", ") })) + "</span>" : "") + err(key) + "</div>";
 }
 function toggle(key, label) {
   return '<label class="switch" title="' + label + '"><input type="checkbox" data-key="' + key + '" aria-label="' + label + '"' + (getP(ui.draft, key) ? " checked" : "") + "><span></span></label>";
@@ -369,7 +424,7 @@ async function save(next = ui.draft) {
   ui.draft = { ...clone(result.settings), ...pending(next) };
   ui.errors = {};
   ui.notice = ["ok", L.saved];
-  applyTheme(); render();
+  applyTheme(); render(); refreshUnknown();
   setTimeout(() => { ui.notice = null; if (!dirty() && ["commands", "mic", "settings"].includes(ui.screen)) render(); }, 3000);
   return true;
 }
@@ -406,11 +461,11 @@ document.addEventListener("click", async (ev) => {
   const t = ev.target.closest("button, [data-go]");
   if (!t) return;
   const d = t.dataset;
-  if (d.screen || d.go) { ui.screen = d.screen || d.go; ui.notice = null; ui.adding = null; render(true); return; }
+  if (d.screen || d.go) { ui.screen = d.screen || d.go; ui.notice = null; ui.adding = null; render(true); if (ui.screen === "commands") refreshUnknown(); return; }
   if (d.seg) { const v = d.v === "true" ? true : d.v === "false" ? false : d.v; await setDraft(d.seg, v); render(); updateSaveBar(); return; }
   if (d.filter) { ui.filter = d.filter; render(); return; }
   if (d.remove) { setP(ui.draft, d.remove, getP(ui.draft, d.remove).filter((_, i) => i !== Number(d.i))); delete ui.errors[d.remove]; ui.notice = null; render(); return; }
-  if (d.wordsLang) { ui.wordsLang = d.wordsLang; ui.adding = null; render(); return; }
+  if (d.wordsLang) { ui.wordsLang = d.wordsLang; ui.adding = null; ui.check = null; render(); refreshUnknown(); return; }
   if (d.addStart) { ui.adding = d.addStart; render(); return; }
   switch (d.action) {
     case "pause": ui.live = await api.set_paused(!ui.live.paused); render(); renderLive(); break;
@@ -438,6 +493,7 @@ document.addEventListener("click", async (ev) => {
 document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.id === "query") { ui.query = t.value; render(); return; }
+  if (t.dataset?.add) { scheduleCheck(t.dataset.add, t.value); return; }
   if (t.type === "range") {
     const key = t.dataset.key, v = Number(t.value);
     ui.draft[key] = v; delete ui.errors[key]; ui.notice = null;
@@ -452,12 +508,18 @@ document.addEventListener("change", async (ev) => {
   if (t.type === "checkbox" && t.dataset.key) { await setDraft(t.dataset.key, t.checked); render(); updateSaveBar(); return; }
   if (t.tagName === "SELECT" && t.dataset.key) { await setDraft(t.dataset.key, t.value); render(); updateSaveBar(); }
 });
-document.addEventListener("keydown", (ev) => {
+document.addEventListener("keydown", async (ev) => {
   const t = ev.target;
   if (t.dataset?.add && (ev.key === "Enter" || ev.key === "Escape")) {
-    const key = t.dataset.add, word = t.value.trim().toLowerCase();
-    if (ev.key === "Enter" && word && !getP(ui.draft, key).includes(word)) { setP(ui.draft, key, [...getP(ui.draft, key), word]); ui.notice = null; }
-    ui.adding = null; delete ui.errors[key]; render();
+    const key = t.dataset.add, word = normWord(t.value);
+    clearTimeout(checkTimer); checkSeq++;
+    if (ev.key === "Enter" && word && !getP(ui.draft, key).includes(word)) {
+      const r = await checkWord(key, word);
+      if (ui.adding !== key) return;
+      if (!r.ok) { showCheck(r.kind, r.text); return; }
+      setP(ui.draft, key, [...getP(ui.draft, key), word]); ui.notice = null;
+    }
+    ui.adding = null; ui.check = null; delete ui.errors[key]; render();
     $('[data-add-start="' + key + '"]')?.focus();
   }
 });

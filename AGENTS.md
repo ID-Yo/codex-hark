@@ -24,6 +24,7 @@ Instructions for coding agents in this repository. README.md explains the produc
 - Python 3.13; keep dependencies pinned in `requirements.txt`; a new dependency needs a reason and an entry in `THIRD_PARTY.md`.
 - Python sources use CRLF line endings; keep them so diffs show only real changes.
 - Changing a user-visible string means changing both languages.
+- Only `wake_words` may hold phrases (up to 3 words, matched as consecutive recognized words); every other word list holds single words. Vosk silently ignores words that are missing from the model, so new words must be checked with `model_knows` (the window uses `Api.check_words`).
 - Keep the version in `wakeword.py` and the tag in sync; add a CHANGELOG entry for user-visible changes.
 
 ## Boundaries

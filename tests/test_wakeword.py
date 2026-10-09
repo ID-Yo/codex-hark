@@ -50,6 +50,38 @@ class HeardTests(unittest.TestCase):
         self.assertEqual(set(words), {"codex", "write", "draft", "stop", "[unk]", *EN["decoys"]})
 
 
+class WakePhraseTests(unittest.TestCase):
+    PHRASE = {**EN, "wake_words": ["hey jarvis"]}
+
+    def test_phrase_needs_all_its_words_in_a_row(self):
+        self.assertEqual(ww.heard(result(("hey", 1.0), ("jarvis", 0.8), ("write", 1.0)), self.PHRASE, 0.5),
+                         ("hey jarvis", "write", 0.9))
+        self.assertEqual(ww.heard(result(("jarvis", 1.0)), self.PHRASE, 0.5)[0], "")
+        self.assertEqual(ww.heard(result(("hey", 1.0)), self.PHRASE, 0.5)[0], "")
+        self.assertEqual(ww.heard(result(("hey", 1.0), ("[unk]", 1.0), ("jarvis", 1.0)), self.PHRASE, 0.5)[0], "")
+        self.assertEqual(ww.heard(result(("jarvis", 1.0), ("hey", 1.0)), self.PHRASE, 0.5)[0], "")
+
+    def test_phrase_confidence_is_the_mean_of_its_words(self):
+        self.assertEqual(ww.heard(result(("hey", 0.2), ("jarvis", 0.4)), self.PHRASE, 0.5)[0], "")
+        self.assertEqual(ww.heard(result(("hey", 0.4), ("jarvis", 0.8)), self.PHRASE, 0.5)[0], "hey jarvis")
+
+    def test_phrase_can_follow_other_words_and_the_longer_phrase_wins(self):
+        words = {**EN, "wake_words": ["codex", "hey codex"]}
+        self.assertEqual(ww.heard(result(("hey", 1.0), ("codex", 1.0), ("stop", 1.0)), words, 0.5),
+                         ("hey codex", "stop", 1.0))
+        self.assertEqual(ww.heard(result(("codex", 1.0), ("stop", 1.0)), words, 0.5), ("codex", "stop", 1.0))
+        self.assertEqual(ww.heard(result(("so", 1.0), ("hey", 1.0), ("jarvis", 1.0)), self.PHRASE, 0.5)[0], "hey jarvis")
+
+    def test_grammar_keeps_the_phrase_as_one_item(self):
+        self.assertIn("hey jarvis", json.loads(ww.grammar(self.PHRASE)))
+
+    def test_unknown_words_of_a_phrase_are_listed_once(self):
+        model_knows = lambda model, word: word not in ("jarvis", "hark")  # noqa: E731
+        words = {**EN, "wake_words": ["hey jarvis", "jarvis hark"], "decoys": ["code"]}
+        with patch.object(ww, "model_knows", model_knows):
+            self.assertEqual(ww.unknown_words(object(), words), ["jarvis", "hark"])
+
+
 class CodexBusyTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -114,6 +146,20 @@ class ValidateSettingsTests(unittest.TestCase):
         self.assertIn("languages.bg.draft_words", ww.validate_settings(langs(draft_words=["пиши"]))[1])
         self.assertIn("languages.bg.stop_words", ww.validate_settings(langs(stop_words=["кодекс"]))[1])
         self.assertEqual(ww.validate_settings(langs(decoys=[], send_words=[]))[1], {})
+
+    def test_only_wake_words_may_be_phrases(self):
+        settings, errors = ww.validate_settings(langs(wake_words=["  Хей   Кодекс "]))
+        self.assertEqual((settings["languages"]["bg"]["wake_words"], errors), (["хей кодекс"], {}))
+        self.assertIn("languages.bg.send_words", ww.validate_settings(langs(send_words=["пиши ми"]))[1])
+        self.assertIn("languages.bg.decoys", ww.validate_settings(langs(decoys=["един два"]))[1])
+        _, errors = ww.validate_settings(langs(wake_words=["a b c d"]), lang="en")
+        self.assertIn("at most 3 words", errors["languages.bg.wake_words"])
+
+    def test_every_word_of_a_phrase_is_checked_against_the_model(self):
+        known = lambda lang, w: w != "джарвис"  # noqa: E731
+        _, errors = ww.validate_settings(langs(wake_words=["хей джарвис", "ей джарвис"]), known_word=known)
+        self.assertTrue(errors["languages.bg.wake_words"].endswith("джарвис."))
+        self.assertEqual(errors["languages.bg.wake_words"].count("джарвис"), 1)
 
     def test_a_language_must_be_on(self):
         off = {"languages": {code: {**w, "enabled": False} for code, w in ww.DEFAULTS["languages"].items()}}
