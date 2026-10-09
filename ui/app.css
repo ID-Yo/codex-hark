@@ -99,6 +99,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .k-chat { color: var(--chat); } .k-dictation { color: var(--dict); } .k-sent, .k-inserted { color: var(--good); } .k-error { color: var(--error); } .k-pause, .k-settings { color: var(--subtle); }
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field > label, .label { font-weight: 620; font-size: 12px; }
+.text-input, .file-editor { border: 1px solid var(--control-border); border-radius: 8px; padding: 6px 8px; background: var(--surface); font-size: 12px; width: 100%; user-select: text; }
+.file-editor { min-height: 240px; resize: vertical; font-family: Consolas, "Cascadia Mono", monospace; line-height: 1.45; }
 .lab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .lab output { font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 650; font-size: 12px; }
 .error-text { color: var(--error); font-size: 11.5px; }
