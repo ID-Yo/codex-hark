@@ -53,7 +53,7 @@ const I18N = {
     actEyebrow: "Дневник", actTitle: "Какво се е случило", actNote: "Пазят се последните 1000 събития. Аудио и текст от диктовката не се записват.",
     logFolder: "Папка с лога", copy: "Копирай", copied: "Копирано", copyFailed: "Неуспешно копиране", search: "Търсене", filters: ["Всички", "Гласов чат", "Диктовка", "Грешки"],
     time: "Време", event: "Събитие", details: "Подробности", none: "Няма събития.",
-    setEyebrow: "Настройки", setTitle: "Приложение", setNote: "Тези настройки се запазват веднага.", setGeneral: "Общи", setLanguages: "Езици", setMic: "Микрофон", setWindows: "Инсталация и Windows", setUpdates: "Обновления", appInstallFolder: "Инсталационна папка",
+    setEyebrow: "Настройки", setTitle: "Приложение", setNote: "Тези настройки се запазват веднага.", cmdVoiceChat: "Гласов чат", cmdDictation: "Диктовка", cmdSensitivity: "Чувствителност", cmdShortcuts: "Шорткъти", asstConfig: "Настройки", asstAgentsFile: "AGENTS.md", asstSoulFile: "SOUL.md", asstMemoryFile: "MEMORY.md", setGeneral: "Общи", setLanguages: "Езици", setMic: "Микрофон", setWindows: "Инсталация и Windows", setUpdates: "Обновления", appInstallFolder: "Инсталационна папка",
     autostart: "Стартирай с Windows", autostartHelp: "Иконата се появява в трея след влизане.", notifications: "Известия", notificationsHelp: "При проблем: няма микрофон, Codex не е отворен.",
     beep: "Звуков сигнал при задействане", beepHelp: "Кратък тон, когато чуе ключовата дума.", theme: "Тема", themes: ["Светла", "Тъмна", "Системна"],
     language: "Език", languages: ["Български", "English", "Като Windows"],
@@ -107,7 +107,7 @@ const I18N = {
     actEyebrow: "Activity", actTitle: "What happened", actNote: "The last 1000 events are kept. Audio and dictated text are never stored.",
     logFolder: "Log folder", copy: "Copy", copied: "Copied", copyFailed: "Copy failed", search: "Search", filters: ["All", "Voice chat", "Dictation", "Errors"],
     time: "Time", event: "Event", details: "Details", none: "No events.",
-    setEyebrow: "Settings", setTitle: "Application", setNote: "These settings are saved right away.", setGeneral: "General", setLanguages: "Languages", setMic: "Microphone", setWindows: "Installation & Windows", setUpdates: "Updates", appInstallFolder: "Installation folder",
+    setEyebrow: "Settings", setTitle: "Application", setNote: "These settings are saved right away.", cmdVoiceChat: "Voice chat", cmdDictation: "Dictation", cmdSensitivity: "Sensitivity", cmdShortcuts: "Shortcuts", asstConfig: "Settings", asstAgentsFile: "AGENTS.md", asstSoulFile: "SOUL.md", asstMemoryFile: "MEMORY.md", setGeneral: "General", setLanguages: "Languages", setMic: "Microphone", setWindows: "Installation & Windows", setUpdates: "Updates", appInstallFolder: "Installation folder",
     autostart: "Start with Windows", autostartHelp: "The tray icon appears after you sign in.", notifications: "Notifications", notificationsHelp: "On problems: no microphone, Codex not open.",
     beep: "Beep on trigger", beepHelp: "A short tone when it hears the wake word.", theme: "Theme", themes: ["Light", "Dark", "System"],
     language: "Language", languages: ["Български", "English", "Same as Windows"],
@@ -125,7 +125,7 @@ const FILTERS = { all: null, chat: ["chat"], dictation: ["dictation", "sent", "i
 
 const ui = {
   targets: { threads: [], projects: [] },
-  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "", settingsTab: "general", installFolderPick: "",
+  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "", settingsTab: "general", installFolderPick: "", cmdTab: "chat", asstTab: "config",
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
@@ -164,8 +164,8 @@ function fixtureApi() {
   const asstFiles = { "AGENTS.md": "# Personal assistant\n\nRead SOUL.md and MEMORY.md first.\n", "SOUL.md": "# Soul\n\nYour name is Hark.\n", "MEMORY.md": "# Memory\n\n## About the user\n" };
   const limits = { chat_continue_minutes: [0, 240], min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.18.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.18.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.19.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.19.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true, test_hotkey: async () => ({ ok: true }), install_app: async () => { ui.meta.installed = true; return { ok: true, installed: true, text: "Installed" }; }, uninstall_app: async () => { ui.meta.installed = false; return { ok: true, installed: false, text: "Uninstalled" }; },
@@ -173,7 +173,7 @@ function fixtureApi() {
     create_assistant: async (f) => { const folder = f || asstFolder; asstFolder = folder; settings = { ...settings, chat_target: "project", chat_project: folder, assistant_folder: folder, chat_continue_minutes: settings.chat_continue_minutes || 30 }; asstReady = true; return { ok: true, folder: settings.assistant_folder, project: true, settings }; },
     assistant_info: async () => ({ folder: asstFolder, ready: asstReady, project: asstReady, models: [{ slug: "gpt-6-astra", name: "GPT-6-Astra" }, { slug: "gpt-6.1-sol", name: "GPT-6.1-Sol" }], files: asstReady ? { ...asstFiles } : {} }),
     save_assistant_file: async (f, t) => { asstFiles[f] = t; return { ok: true }; }, open_assistant_folder: async () => true,
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.19.0 — you have 0.18.0", version: "0.19.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.19.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.20.0 — you have 0.19.0", version: "0.20.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.20.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -392,20 +392,52 @@ const screens = {
   commands() {
     const lang = ui.wordsLang;
     const w = "languages." + lang + ".";
-    return saveBar() + '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + "</div><h1>" + L.cmdTitle + "</h1><small>" + L.cmdNote + "</small></div></div>" +
-      '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + "</button>").join("") + "</div></div>" +
-      '<div class="grid2"><section class="card"><div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + "</span><div><h2>" + L.chat + "</h2><small>" + T("chatSub", { voice: voiceKey() }) + "</small></div></div>" + toggle("chat_enabled", L.chatOn) + "</div>" +
-      chips(w + "wake_words", L.wakeWords) + chatTarget() +
-      '<div class="set"><div><strong>' + L.idleClose + "</strong><small>" + L.closeHelp + "</small></div>" + toggle("idle_close", L.idleClose) + "</div>" +
-      (ui.draft.idle_close ? range("idle_seconds", L.closeAfter, 1, " s") : "") +
-      '<div class="set"><div><strong>' + L.stopWords + "</strong></div>" + toggle("stop_enabled", L.stopOn) + "</div>" +
-      (ui.draft.stop_enabled ? chips(w + "stop_words", "") : "") +
-      '<button class="btn btn-small" style="align-self:flex-start" data-action="test-chat">' + icon("play") + L.tryChat + "</button></section>" +
-      '<section class="card"><div class="head"><div class="head-title"><span class="mark dict">' + icon("pen") + "</span><div><h2>" + L.dict + "</h2><small>" + L.dictSub + "</small></div></div>" + toggle("dictation_enabled", L.dictOn) + "</div>" +
-      chips(w + "send_words", L.sendWords) + chips(w + "draft_words", L.draftWords) + range("dictation_idle_seconds", L.dictEnd, 1, " s") + "</section></div>" +
-      '<section class="card"><div><h2>' + L.sensitivity + "</h2><small>" + L.sensHelp + "</small></div>" +
-      range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
-      "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>" + shortcutsSection();
+    const tab = ui.cmdTab || "chat";
+    const navItems = [
+      ["chat", L.cmdVoiceChat, "chat"],
+      ["dictation", L.cmdDictation, "pen"],
+      ["sensitivity", L.cmdSensitivity, "mic"],
+      ["shortcuts", L.cmdShortcuts, "play"],
+    ];
+    const leftNav = '<nav class="settings-nav" aria-label="' + L.cmdTitle + '">' +
+      navItems.map(([id, title, ic]) =>
+        '<button class="settings-nav-btn" data-cmd-tab="' + id + '" aria-selected="' + (tab === id) + '" role="tab">' +
+        icon(ic) + '<span>' + esc(title) + '</span></button>'
+      ).join("") + '</nav>';
+
+    let rightContent = "";
+    if (tab === "chat") {
+      rightContent = '<section class="card">' +
+        '<div class="head"><div class="head-title"><span class="mark chat">' + icon("chat") + '</span><div><h2>' + L.chat + '</h2><small>' + T("chatSub", { voice: voiceKey() }) + '</small></div></div>' + toggle("chat_enabled", L.chatOn) + '</div>' +
+        chips(w + "wake_words", L.wakeWords) + chatTarget() +
+        '<div class="set"><div><strong>' + L.idleClose + '</strong><small>' + L.closeHelp + '</small></div>' + toggle("idle_close", L.idleClose) + '</div>' +
+        (ui.draft.idle_close ? range("idle_seconds", L.closeAfter, 1, " s") : "") +
+        '<div class="set"><div><strong>' + L.stopWords + '</strong></div>' + toggle("stop_enabled", L.stopOn) + '</div>' +
+        (ui.draft.stop_enabled ? chips(w + "stop_words", "") : "") +
+        '<button class="btn btn-small" style="align-self:flex-start" data-action="test-chat">' + icon("play") + L.tryChat + '</button>' +
+        '</section>';
+    } else if (tab === "dictation") {
+      rightContent = '<section class="card">' +
+        '<div class="head"><div class="head-title"><span class="mark dict">' + icon("pen") + '</span><div><h2>' + L.dict + '</h2><small>' + L.dictSub + '</small></div></div>' + toggle("dictation_enabled", L.dictOn) + '</div>' +
+        chips(w + "send_words", L.sendWords) + chips(w + "draft_words", L.draftWords) + range("dictation_idle_seconds", L.dictEnd, 1, " s") +
+        '</section>';
+    } else if (tab === "sensitivity") {
+      rightContent = '<section class="card">' +
+        '<div><h2>' + L.sensitivity + '</h2><small>' + L.sensHelp + '</small></div>' +
+        range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
+        "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details>" +
+        '</section>';
+    } else if (tab === "shortcuts") {
+      rightContent = shortcutsSection();
+    }
+
+    return saveBar() +
+      '<div class="intro"><div><div class="eyebrow">' + L.cmdEyebrow + '</div><h1>' + L.cmdTitle + '</h1><small>' + L.cmdNote + '</small></div></div>' +
+      '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + '</button>').join("") + '</div></div>' +
+      '<div class="settings-layout">' +
+      leftNav +
+      '<div class="settings-content">' + rightContent + '</div>' +
+      '</div>';
   },
   micCards() {
     const live = ui.live || { level: 0 };
@@ -500,31 +532,59 @@ const screens = {
   },
   assistant() {
     const info = ui.asstInfo, d = ui.draft, a = ui.asst;
-    const head = '<div class="intro"><div><div class="eyebrow">' + L.asstEyebrow + "</div><h1>" + esc(d.assistant_name || L.asstTitle) + "</h1><small>" + L.asstNote + "</small></div></div>";
+    const head = '<div class="intro"><div><div class="eyebrow">' + L.asstEyebrow + '</div><h1>' + esc(d.assistant_name || L.asstTitle) + '</h1><small>' + L.asstNote + '</small></div></div>';
     const status = a === "working" ? L.asstWorking : a ? a.text : "";
     if (!info || !info.ready) {
-      return head + '<section class="card"><div><h2>' + L.asstTitle + "</h2><small>" + L.asstOnHelp + "</small></div>" +
+      return head + '<section class="card"><div><h2>' + L.asstTitle + '</h2><small>' + L.asstOnHelp + '</small></div>' +
         '<div class="field"><label for="asst-name">' + L.asstName + '</label><input id="asst-name" class="text-input" data-text="assistant_name" maxlength="40" value="' + esc(d.assistant_name) + '"></div>' +
-        '<div class="set"><div><strong>' + L.asstFolder + '</strong><small id="asst-folder">' + esc(ui.asstPick || info?.folder || "") + '</small></div><button class="btn btn-small" data-action="choose-folder">' + icon("folder") + L.asstChoose + "</button></div>" +
-        '<button class="btn btn-primary" style="align-self:flex-start" data-action="assistant"' + (a === "working" ? " disabled" : "") + ">" + icon("spark") + L.asstOn + "</button>" +
-        (status ? "<small" + (a.err ? ' class="error-text"' : "") + ">" + esc(status) + "</small>" : "") + "</section>";
+        '<div class="set"><div><strong>' + L.asstFolder + '</strong><small id="asst-folder">' + esc(ui.asstPick || info?.folder || "") + '</small></div><button class="btn btn-small" data-action="choose-folder">' + icon("folder") + L.asstChoose + '</button></div>' +
+        '<button class="btn btn-primary" style="align-self:flex-start" data-action="assistant"' + (a === "working" ? " disabled" : "") + '>' + icon("spark") + L.asstOn + '</button>' +
+        (status ? "<small" + (a.err ? ' class="error-text"' : "") + ">" + esc(status) + "</small>" : "") + '</section>';
     }
-    const here = d.chat_target === "project" && d.chat_project === info.folder;
-    const models = [["", L.asstModelDefault]].concat(info.models.map((m) => [m.slug, m.name]));
-    if (d.assistant_model && !info.models.some((m) => m.slug === d.assistant_model)) models.push([d.assistant_model, d.assistant_model]);
-    const file = ui.asstFile, text = ui.asstEdits[file] ?? info.files[file] ?? "";
-    const changed = ui.asstEdits[file] != null && ui.asstEdits[file] !== info.files[file];
+    const tab = ui.asstTab || "config";
+    const navItems = [
+      ["config", L.asstConfig, "gear"],
+      ["AGENTS.md", L.asstAgentsFile, "spark"],
+      ["SOUL.md", L.asstSoulFile, "pen"],
+      ["MEMORY.md", L.asstMemoryFile, "list"],
+    ];
+    const leftNav = '<nav class="settings-nav" aria-label="' + L.asstTitle + '">' +
+      navItems.map(([id, title, ic]) =>
+        '<button class="settings-nav-btn" data-asst-tab="' + id + '" aria-selected="' + (tab === id) + '" role="tab">' +
+        icon(ic) + '<span>' + esc(title) + '</span></button>'
+      ).join("") + '</nav>';
+
+    let rightContent = "";
+    if (tab === "config") {
+      const here = d.chat_target === "project" && d.chat_project === info.folder;
+      const models = [["", L.asstModelDefault]].concat(info.models.map((m) => [m.slug, m.name]));
+      if (d.assistant_model && !info.models.some((m) => m.slug === d.assistant_model)) models.push([d.assistant_model, d.assistant_model]);
+      rightContent = '<section class="card" style="gap:12px">' +
+        '<div><h2>' + L.asstConfig + '</h2><small>' + L.asstNote + '</small></div>' +
+        '<div class="field"><label for="asst-name">' + L.asstName + '</label><input id="asst-name" class="text-input" data-text="assistant_name" maxlength="40" value="' + esc(d.assistant_name) + '"></div>' +
+        '<div class="field"><label for="asst-model">' + L.asstModel + '</label><select id="asst-model" data-key="assistant_model">' + models.map(([v, n]) => '<option value="' + esc(v) + '"' + (v === (d.assistant_model || "") ? " selected" : "") + '>' + esc(n) + '</option>').join("") + '</select><small>' + L.asstModelHelp + '</small></div>' +
+        range("chat_continue_minutes", L.asstContinue, 5, " min", L.asstContinueHelp) +
+        '<div class="set" style="padding-top:10px"><div><strong>' + L.asstFolder + '</strong><small>' + esc(info.folder) + '</small></div><div class="steps"><button class="btn btn-small" data-action="open-asst-folder">' + icon("folder") + L.asstOpen + '</button><button class="btn btn-small" data-action="move-folder" title="' + L.asstMoveHelp + '">' + L.asstMove + '</button></div></div>' +
+        '<div class="set"><div><strong>' + L.asstProject + '</strong><small>' + (info.project ? esc(info.folder.split("\\").pop()) : L.asstProjectNo) + '</small></div></div>' +
+        (here ? '' : '<div class="set"><div><strong class="error-text">' + L.asstElsewhere + '</strong></div><button class="btn btn-small btn-primary" data-action="assistant">' + L.asstSendHere + '</button></div>') +
+        (status ? '<small' + (a.err ? ' class="error-text"' : '') + '>' + esc(status) + '</small>' : '') +
+        '</section>';
+    } else {
+      const file = tab;
+      const text = ui.asstEdits[file] ?? info.files[file] ?? "";
+      const changed = ui.asstEdits[file] != null && ui.asstEdits[file] !== info.files[file];
+      rightContent = '<section class="card" style="gap:10px">' +
+        '<div class="head"><div><h2>' + file + '</h2><small>' + (file === "AGENTS.md" ? "Правила и инструкции за поведението на агента." : file === "SOUL.md" ? "Характер, име и идентичност." : "Дългосрочна памет за потребителя.") + '</small></div>' +
+        '<div class="steps"><button class="btn btn-small btn-primary" data-action="save-file"' + (changed ? "" : " disabled") + '>' + icon("ok") + L.asstSaveFile + '</button><button class="btn btn-small" data-action="reload-files">' + L.asstReload + '</button></div></div>' +
+        '<textarea id="asst-text" data-file="' + file + '" class="file-editor" spellcheck="false" aria-label="' + file + '">' + esc(text) + '</textarea>' +
+        '<small>' + esc(ui.asstNote || (changed ? T("asstFileUnsaved", { f: file }) : "")) + '</small></section>';
+    }
+
     return saveBar() + head +
-      '<div class="grid2"><section class="card"><div class="field"><label for="asst-name">' + L.asstName + '</label><input id="asst-name" class="text-input" data-text="assistant_name" maxlength="40" value="' + esc(d.assistant_name) + '"></div>' +
-      '<div class="field"><label for="asst-model">' + L.asstModel + '</label><select id="asst-model" data-key="assistant_model">' + models.map(([v, n]) => '<option value="' + esc(v) + '"' + (v === (d.assistant_model || "") ? " selected" : "") + ">" + esc(n) + "</option>").join("") + "</select><small>" + L.asstModelHelp + "</small></div>" +
-      range("chat_continue_minutes", L.asstContinue, 5, " min", L.asstContinueHelp) + "</section>" +
-      '<section class="card" style="gap:0"><div class="set"><div><strong>' + L.asstFolder + "</strong><small>" + esc(info.folder) + '</small></div><div class="steps"><button class="btn btn-small" data-action="open-asst-folder">' + icon("folder") + L.asstOpen + '</button><button class="btn btn-small" data-action="move-folder" title="' + L.asstMoveHelp + '">' + L.asstMove + "</button></div></div>" +
-      '<div class="set"><div><strong>' + L.asstProject + "</strong><small>" + (info.project ? esc(info.folder.split("\\").pop()) : L.asstProjectNo) + "</small></div></div>" +
-      (here ? "" : '<div class="set"><div><strong class="error-text">' + L.asstElsewhere + '</strong></div><button class="btn btn-small btn-primary" data-action="assistant">' + L.asstSendHere + "</button></div>") +
-      (status ? "<small" + (a.err ? ' class="error-text"' : "") + ">" + esc(status) + "</small>" : "") + "</section></div>" +
-      '<section class="card"><div class="head"><h2>' + L.asstFiles + '</h2><div class="seg" role="group">' + info.filesOrder.map((f) => '<button data-asst-file="' + f + '" aria-pressed="' + (f === file) + '">' + f + "</button>").join("") + "</div></div>" +
-      '<textarea id="asst-text" class="file-editor" spellcheck="false" aria-label="' + file + '">' + esc(text) + "</textarea>" +
-      '<div class="steps"><button class="btn btn-small btn-primary" data-action="save-file"' + (changed ? "" : " disabled") + ">" + icon("ok") + L.asstSaveFile + '</button><button class="btn btn-small" data-action="reload-files">' + L.asstReload + "</button><small>" + esc(ui.asstNote || (changed ? T("asstFileUnsaved", { f: file }) : "")) + "</small></div></section>";
+      '<div class="settings-layout">' +
+      leftNav +
+      '<div class="settings-content">' + rightContent + '</div>' +
+      '</div>';
   },
   about() {
     const m = ui.meta;
@@ -646,6 +706,8 @@ document.addEventListener("click", async (ev) => {
     return; }
   if (d.asstFile) { ui.asstFile = d.asstFile; ui.asstNote = ""; render(); return; }
   if (d.setTab) { ui.settingsTab = d.setTab; render(); return; }
+  if (d.cmdTab) { ui.cmdTab = d.cmdTab; render(); return; }
+  if (d.asstTab) { ui.asstTab = d.asstTab; ui.asstNote = ""; render(); return; }
   if (d.seg) { const v = d.v === "true" ? true : d.v === "false" ? false : d.v; await setDraft(d.seg, v); render(); updateSaveBar(); return; }
   if (d.filter) { ui.filter = d.filter; render(); return; }
   if (d.remove) { setP(ui.draft, d.remove, getP(ui.draft, d.remove).filter((_, i) => i !== Number(d.i))); delete ui.errors[d.remove]; ui.notice = null; render(); return; }
@@ -710,7 +772,7 @@ document.addEventListener("click", async (ev) => {
       break;
     }
     case "save-file": {
-      const f = ui.asstFile, r = await api.save_assistant_file(f, ui.asstEdits[f]);
+      const f = ui.asstTab || ui.asstFile, r = await api.save_assistant_file(f, ui.asstEdits[f]);
       if (r.ok) { ui.asstInfo.files[f] = ui.asstEdits[f]; delete ui.asstEdits[f]; ui.asstNote = T("asstFileSaved", { f }); } else ui.asstNote = r.text;
       render(); break;
     }
@@ -758,7 +820,7 @@ document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.id === "query") { ui.query = t.value; render(); return; }
   if (t.dataset?.text) { setP(ui.draft, t.dataset.text, t.value.slice(0, 60)); delete ui.errors[t.dataset.text]; ui.notice = null; updateSaveBar(); return; }
-  if (t.id === "asst-text") { ui.asstEdits[ui.asstFile] = t.value; ui.asstNote = ""; const b = $("[data-action=save-file]"); if (b) b.disabled = ui.asstEdits[ui.asstFile] === ui.asstInfo.files[ui.asstFile]; return; }
+  if (t.id === "asst-text") { const f = t.dataset?.file || ui.asstTab; ui.asstEdits[f] = t.value; ui.asstNote = ""; const b = $("[data-action=save-file]"); if (b) b.disabled = ui.asstEdits[f] === ui.asstInfo.files[f]; return; }
   if (t.dataset?.add) { scheduleCheck(t.dataset.add, t.value); return; }
   if (t.type === "range") {
     const key = t.dataset.key, v = Number(t.value);

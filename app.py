@@ -174,19 +174,29 @@ def create_windows_shortcut(target, lnk_path, icon_location=None, work_dir=None,
     icon = icon_location or f"{target},0"
     work = work_dir or os.path.dirname(target)
     os.makedirs(os.path.dirname(lnk_path), exist_ok=True)
-    payload = json.dumps({"target": target, "lnk": lnk_path, "work": work, "icon": icon, "desc": description})
-    ps = """
-    $d = [Console]::In.ReadToEnd() | ConvertFrom-Json
-    $ws = New-Object -ComObject WScript.Shell
-    $s = $ws.CreateShortcut($d.lnk)
-    $s.TargetPath = $d.target
-    $s.WorkingDirectory = $d.work
-    $s.IconLocation = $d.icon
-    $s.Description = $d.desc
-    $s.Save()
-    """
-    subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], input=payload, text=True, check=True)
-
+    import tempfile
+    ps_file = os.path.join(tempfile.gettempdir(), f"mklink_{os.getpid()}_{id(lnk_path)}.ps1")
+    def ps_quote(v):
+        return "'" + str(v).replace("'", "''") + "'"
+    with open(ps_file, "w", encoding="utf-8") as f:
+        f.write(f"""
+$ws = New-Object -ComObject WScript.Shell
+$s = $ws.CreateShortcut({ps_quote(lnk_path)})
+$s.TargetPath = {ps_quote(target)}
+$s.WorkingDirectory = {ps_quote(work)}
+$s.IconLocation = {ps_quote(icon)}
+$s.Description = {ps_quote(description)}
+$s.Save()
+""")
+    try:
+        subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps_file],
+                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       check=True)
+    finally:
+        try:
+            os.remove(ps_file)
+        except OSError:
+            pass
 
 def default_install_folder():
     local = os.environ.get("LOCALAPPDATA", "")
@@ -210,7 +220,10 @@ def get_install_folder():
 def install_app(target_folder=None):
     """Install Hark into target_folder (or current/default folder), create Start Menu and Desktop shortcuts and register in Windows."""
     cur_exe = sys.executable if getattr(sys, "frozen", False) else os.path.abspath(sys.argv[0])
-    folder = os.path.normpath(target_folder or get_install_folder() or default_install_folder())
+    raw_folder = target_folder or get_install_folder() or default_install_folder()
+    if raw_folder.lower().endswith(".exe") or os.path.isfile(raw_folder):
+        raw_folder = os.path.dirname(raw_folder)
+    folder = os.path.normpath(raw_folder)
     os.makedirs(folder, exist_ok=True)
     target_exe = os.path.join(folder, "CodexHark.exe")
     if getattr(sys, "frozen", False) and os.path.normcase(cur_exe) != os.path.normcase(target_exe):

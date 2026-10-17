@@ -4,6 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-17
+
+### Added
+- **Unified Sidebar Navigation Layout**: Voice commands (Voice chat, Dictation, Sensitivity, Shortcuts) and AI Assistant (Settings, AGENTS.md, SOUL.md, MEMORY.md) now feature the same modern left navigation bar design as Settings.
+
+### Fixed
+- Fixed `WinError 50` (The request is not supported) when creating Windows shortcuts from the GUI executable without attached console handles. Shortcut creation now runs safely without stdin/stdout pipe inheritance.
+- Fixed `install_app` target folder resolution when an `.exe` file path is supplied instead of a directory.
+
 ## [0.18.0] - 2026-10-17
 
 ### Added
