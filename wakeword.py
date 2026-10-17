@@ -48,10 +48,11 @@ from vosk import KaldiRecognizer, Model, SetLogLevel  # noqa: E402
 
 comtypes.client.GetModule("UIAutomationCore.dll")
 from comtypes.gen.UIAutomationClient import (  # noqa: E402
-    CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
-    UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
+    CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, IUIAutomationLegacyIAccessiblePattern,
+    TreeScope_Descendants, UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId,
+    UIA_LegacyIAccessiblePatternId, UIA_NamePropertyId)
 
-__version__ = "0.17.1"
+__version__ = "0.17.2"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -288,6 +289,7 @@ STOP_DICTATION_BUTTON = "Stop dictation"  # present while dictation is running; 
 # Codex's own voice chat buttons. The voice chat key always starts a chat outside any project; these start it
 # in the open chat ("Start voice chat") or as a new chat in the open project ("Start new voice chat").
 VOICE_BUTTONS = {"thread": ("Start voice chat",), "project": ("Start new voice chat", "Start voice chat")}
+END_VOICE_BUTTONS = ("Stop voice chat", "End voice chat", "Cancel voice chat", "End", "Stop")
 END_VOICE_BUTTON = "End voice chat"
 SEND_DICTATION_BUTTON = "Transcribe and send"  # ends dictation and sends the text to the agent
 MIC_RETRY_S = 10
@@ -1156,8 +1158,20 @@ def click_codex_button(name, tries=3):
             try:
                 button = uia.ElementFromHandle(hwnd).FindFirst(TreeScope_Descendants, cond)
                 if button:
-                    button.GetCurrentPattern(UIA_InvokePatternId).QueryInterface(IUIAutomationInvokePattern).Invoke()
-                    return True
+                    try:
+                        pat = button.GetCurrentPattern(UIA_InvokePatternId)
+                        if pat:
+                            pat.QueryInterface(IUIAutomationInvokePattern).Invoke()
+                            return True
+                    except Exception:
+                        pass
+                    try:
+                        leg = button.GetCurrentPattern(UIA_LegacyIAccessiblePatternId)
+                        if leg:
+                            leg.QueryInterface(IUIAutomationLegacyIAccessiblePattern).DoDefaultAction()
+                            return True
+                    except Exception:
+                        pass
             except COMError:
                 continue
         time.sleep(0.3)
@@ -1290,13 +1304,28 @@ class Listener:
         button = self._find_button(name, tries=tries)
         if not button:
             return False
-        button.GetCurrentPattern(UIA_InvokePatternId).QueryInterface(IUIAutomationInvokePattern).Invoke()
-        return True
+        try:
+            pat = button.GetCurrentPattern(UIA_InvokePatternId)
+            if pat:
+                pat.QueryInterface(IUIAutomationInvokePattern).Invoke()
+                return True
+        except Exception:
+            pass
+        try:
+            leg = button.GetCurrentPattern(UIA_LegacyIAccessiblePatternId)
+            if leg:
+                leg.QueryInterface(IUIAutomationLegacyIAccessiblePattern).DoDefaultAction()
+                return True
+        except Exception:
+            pass
+        return False
 
     def _end_chat(self):
-        """End the voice chat with Codex's End button; the voice chat key if there is none."""
-        if not self._click(END_VOICE_BUTTON, tries=1):
-            press_voice_chat()
+        """End the voice chat with Codex's Stop/End button; the voice chat key if there is none."""
+        for name in END_VOICE_BUTTONS:
+            if self._click(name, tries=1):
+                return
+        press_voice_chat()
 
     def run(self):
         comtypes.CoInitialize()
@@ -1433,7 +1462,18 @@ class Listener:
                 if now < ignore_until:
                     reset()
                     continue
+                # Check if Codex voice chat is genuinely active.
+                # Windows registry LastUsedTimeStop can stay 0 even when voice chat has closed,
+                # so verify with UI: if "Start voice chat" or "Dictate" is visible, voice chat is NOT active.
+                in_voice_chat = False
                 if voice_chat_active():
+                    if self._find_button("Start voice chat", tries=1) or self._find_button("Start new voice chat", tries=1) or self._find_button(DICTATE_BUTTON, tries=1):
+                        in_voice_chat = False
+                    elif any(self._find_button(btn, tries=1) for btn in END_VOICE_BUTTONS):
+                        in_voice_chat = True
+                    else:
+                        in_voice_chat = False
+                if in_voice_chat:
                     if mode is None:
                         mode, last_sound = ("manual" if self._find_button(STOP_DICTATION_BUTTON) else "chat"), now
                         if mode == "chat":

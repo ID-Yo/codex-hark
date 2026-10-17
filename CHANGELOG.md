@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-10-17
+
+### Fixed
+- Fixed Codex dictation and voice chat detection: Windows registry LastUsedTimeStop frequently remains 0 after voice chat closes, causing false positives and infinite silence close loops. Hark now cross-verifies with Codex UI buttons (Start voice chat, Dictate, Stop voice chat).
+- Safe UI button clicks supporting both IUIAutomationInvokePattern and IUIAutomationLegacyIAccessiblePattern.DoDefaultAction().
+
 ## [0.17.1] - 2026-10-17
 
 ### Fixed
