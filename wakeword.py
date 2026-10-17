@@ -52,7 +52,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     TreeScope_Descendants, UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId,
     UIA_LegacyIAccessiblePatternId, UIA_NamePropertyId)
 
-__version__ = "0.19.0"
+__version__ = "0.20.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -736,7 +736,22 @@ SPECIAL_KEY_CODES = {
     "space": 0x20, "enter": 0x0D, "return": 0x0D, "tab": 0x09, "escape": 0x1B, "esc": 0x1B,
     "backspace": 0x08, "delete": 0x2E, "del": 0x2E, "insert": 0x2D, "home": 0x24, "end": 0x23,
     "pageup": 0x21, "pagedown": 0x22, "up": 0x26, "down": 0x28, "left": 0x25, "right": 0x27,
+    "capslock": 0x14, "caps": 0x14, "capital": 0x14, "numlock": 0x90, "scrolllock": 0x91,
+    "printscreen": 0x2C, "prtscn": 0x2C, "pause": 0x13,
+    "grave": 0xC0, "backquote": 0xC0, "`": 0xC0, "~": 0xC0,
+    "minus": 0xBD, "-": 0xBD, "_": 0xBD,
+    "equal": 0xBB, "=": 0xBB, "plus": 0xBB,
+    "bracketleft": 0xDB, "[": 0xDB, "{": 0xDB,
+    "bracketright": 0xDD, "]": 0xDD, "}": 0xDD,
+    "backslash": 0xDC, "\\": 0xDC, "|": 0xDC,
+    "semicolon": 0xBA, ";": 0xBA, ":": 0xBA,
+    "quote": 0xDE, "'": 0xDE, '"': 0xDE,
+    "comma": 0xBC, ",": 0xBC, "<": 0xBC,
+    "period": 0xBE, ".": 0xBE, ">": 0xBE,
+    "slash": 0xBF, "/": 0xBF, "?": 0xBF,
 }
+for _i in range(10):
+    SPECIAL_KEY_CODES[f"numpad{_i}"] = 0x60 + _i
 
 
 def keybindings_path():
@@ -802,15 +817,26 @@ def codex_hotkeys():
 
 
 def parse_hotkey(spec):
-    """Virtual-key codes of a key such as "Alt+Z", "Ctrl+Shift+Space" or "F9" (modifiers first); None if unknown."""
+    """Virtual-key codes of a key such as "Alt+Z", "Ctrl+Shift+Space", "Win", "CapsLock" or "Ctrl+Shift"."""
+    if not spec or not str(spec).strip():
+        return None
     codes = []
-    parts = [p.strip() for p in str(spec).split("+")]
+    s_clean = str(spec).strip()
+    if s_clean.endswith("++"):
+        parts = [p.strip() for p in s_clean[:-2].split("+") if p.strip()] + ["+"]
+    else:
+        parts = [p.strip() for p in s_clean.split("+") if p.strip()]
+    if not parts:
+        return None
     for part in parts[:-1]:
-        if part.lower() not in MODIFIER_CODES:
+        pl = part.lower()
+        if pl not in MODIFIER_CODES:
             return None
-        codes.append(MODIFIER_CODES[part.lower()])
+        codes.append(MODIFIER_CODES[pl])
     key = parts[-1].lower()
-    if len(key) == 1 and key.isascii() and key.isalnum():
+    if key in MODIFIER_CODES:
+        codes.append(MODIFIER_CODES[key])
+    elif len(key) == 1 and key.isascii() and key.isalnum():
         codes.append(ord(key.upper()))
     elif key in SPECIAL_KEY_CODES:
         codes.append(SPECIAL_KEY_CODES[key])

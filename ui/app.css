@@ -169,3 +169,11 @@ a.link:hover { text-decoration: underline; }
 .settings-nav-btn:hover { background: var(--surface-soft); color: var(--ink); }
 .settings-nav-btn[aria-selected="true"] { background: var(--selected); color: var(--primary); font-weight: 650; }
 .settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+
+.hotkey-field { position: relative; display: flex; align-items: center; flex: 2; min-width: 150px; }
+.hotkey-input { border: 1px solid var(--control-border); border-radius: 8px; padding: 6px 28px 6px 10px; background: var(--surface); font-size: 12px; width: 100%; cursor: pointer; user-select: none; font-weight: 600; color: var(--ink); text-align: center; }
+.hotkey-input:hover { border-color: var(--primary); background: var(--surface-soft); }
+.hotkey-input.recording { border-color: var(--primary); background: var(--selected); color: var(--primary); outline: 2px solid var(--focus); box-shadow: 0 0 0 3px rgba(8, 104, 222, 0.2); animation: pulse-ring 1.5s infinite; }
+.hotkey-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: var(--subtle); font-size: 14px; cursor: pointer; padding: 2px 4px; line-height: 1; border-radius: 4px; }
+.hotkey-clear:hover { color: var(--ink); background: var(--border); }
+@keyframes pulse-ring { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }

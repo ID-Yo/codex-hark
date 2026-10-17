@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-17
+
+### Added
+- **Interactive Key Recorder for Shortcuts**: shortcuts are now captured live from keyboard input rather than typed by hand. Clicking the shortcut button enters recording mode and captures any key combination, including Win (Meta/Super), Caps Lock, Space, Tab, Esc, Function keys, and modifiers.
+- **Full Key & Modifier Support in Backend**: `parse_hotkey` and `press_hotkey` now support Caps Lock (`0x14`), Win key (`0x5B`), modifier-only combos (such as `Ctrl+Shift`), and all standard keyboard symbols.
+
 ## [0.19.0] - 2026-10-17
 
 ### Added

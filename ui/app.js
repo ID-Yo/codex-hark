@@ -33,7 +33,7 @@ const I18N = {
     aboutLegal: "Лиценз MIT. Неофициален проект, не е свързан с OpenAI; „Codex“ е име на продукт на OpenAI.",
     keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери", updTitle: "Нови версии", updHelp: "Проверява публичното репо в GitHub след стартиране и на всеки 12 часа.", updCheck: "Провери сега", updAuto: "Автоматична проверка", updGet: "Изтегли {v}", updChecking: "Проверява…", updInstall: "Обнови сега", updInstalling: "Изтегля и проверява новата версия…", updAutoInstall: "Инсталирай обновленията автоматично", updAutoInstallHelp: "Тегли новата версия, проверява SHA256 и рестартира Hark, когато няма отворен разговор.",
         shortcutsTitle: "Персонализирани шорткъти", shortcutsSub: "Стартирайте всяко приложение (като OpenWhispr) с гласова команда или клавиш.",
-    addShortcut: "Добави шорткът", scNamePlaceholder: "Име (напр. OpenWhispr)", scHotkeyPlaceholder: "Шорткът (напр. Ctrl+Shift+Space)",
+    addShortcut: "Добави шорткът", scNamePlaceholder: "Име (напр. OpenWhispr)", scHotkeyPlaceholder: "Шорткът (напр. Ctrl+Shift+Space)", scPressKeys: "Натиснете клавиши…", scRecordHelp: "Кликнете и натиснете желаната комбинация на клавиатурата (напр. Ctrl+Shift+Space, CapsLock, Win+Alt)", scClear: "Изчисти шорткъта",
     scKeywords: "Ключови думи за задействане", scTry: "Пробвай шорткъта", scDelete: "Премахни шорткъта", scToggle: "Включи / Изключи",
     noShortcuts: "Няма добавени персонализирани шорткъти.", appInstall: "Инсталиране на приложението",
     appInstallHelp: "Създава преки пътища в Start Menu и на работния плот с икона и регистрира Hark в Windows.",
@@ -87,7 +87,7 @@ const I18N = {
     aboutLegal: "MIT License. Unofficial project, not affiliated with OpenAI; “Codex” is the name of an OpenAI product.",
     keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check", updTitle: "New versions", updHelp: "Checks the public GitHub repository after start and every 12 hours.", updCheck: "Check now", updAuto: "Automatic check", updGet: "Download {v}", updChecking: "Checking…", updInstall: "Update now", updInstalling: "Downloading and checking the new version…", updAutoInstall: "Install updates automatically", updAutoInstallHelp: "Downloads the new version, checks its SHA256 and restarts Hark when no conversation is open.",
         shortcutsTitle: "Custom shortcuts", shortcutsSub: "Trigger any app (like OpenWhispr) with a voice command or key combo.",
-    addShortcut: "Add shortcut", scNamePlaceholder: "Name (e.g. OpenWhispr)", scHotkeyPlaceholder: "Shortcut (e.g. Ctrl+Shift+Space)",
+    addShortcut: "Add shortcut", scNamePlaceholder: "Name (e.g. OpenWhispr)", scHotkeyPlaceholder: "Shortcut (e.g. Ctrl+Shift+Space)", scPressKeys: "Press keys…", scRecordHelp: "Click and press any key combination (e.g. Ctrl+Shift+Space, CapsLock, Win+Alt)", scClear: "Clear shortcut",
     scKeywords: "Trigger keywords / phrases", scTry: "Test shortcut", scDelete: "Delete shortcut", scToggle: "Enable / Disable",
     noShortcuts: "No custom shortcuts added yet.", appInstall: "Application installation",
     appInstallHelp: "Creates Start Menu and Desktop shortcuts with an icon and registers Hark in Windows.",
@@ -125,7 +125,7 @@ const FILTERS = { all: null, chat: ["chat"], dictation: ["dictation", "sent", "i
 
 const ui = {
   targets: { threads: [], projects: [] },
-  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "", settingsTab: "general", installFolderPick: "", cmdTab: "chat", asstTab: "config",
+  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "", settingsTab: "general", installFolderPick: "", recordingSc: null, recordedCombo: "", cmdTab: "chat", asstTab: "config",
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
@@ -164,8 +164,8 @@ function fixtureApi() {
   const asstFiles = { "AGENTS.md": "# Personal assistant\n\nRead SOUL.md and MEMORY.md first.\n", "SOUL.md": "# Soul\n\nYour name is Hark.\n", "MEMORY.md": "# Memory\n\n## About the user\n" };
   const limits = { chat_continue_minutes: [0, 240], min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.19.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.19.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.20.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.20.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true, test_hotkey: async () => ({ ok: true }), install_app: async () => { ui.meta.installed = true; return { ok: true, installed: true, text: "Installed" }; }, uninstall_app: async () => { ui.meta.installed = false; return { ok: true, installed: false, text: "Uninstalled" }; },
@@ -173,7 +173,7 @@ function fixtureApi() {
     create_assistant: async (f) => { const folder = f || asstFolder; asstFolder = folder; settings = { ...settings, chat_target: "project", chat_project: folder, assistant_folder: folder, chat_continue_minutes: settings.chat_continue_minutes || 30 }; asstReady = true; return { ok: true, folder: settings.assistant_folder, project: true, settings }; },
     assistant_info: async () => ({ folder: asstFolder, ready: asstReady, project: asstReady, models: [{ slug: "gpt-6-astra", name: "GPT-6-Astra" }, { slug: "gpt-6.1-sol", name: "GPT-6.1-Sol" }], files: asstReady ? { ...asstFiles } : {} }),
     save_assistant_file: async (f, t) => { asstFiles[f] = t; return { ok: true }; }, open_assistant_folder: async () => true,
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.20.0 — you have 0.19.0", version: "0.20.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.20.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.21.0 — you have 0.20.0", version: "0.21.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.21.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -342,6 +342,88 @@ function languagesCard() {
       (addable.length ? '<div class="set"><div><strong>' + L.addLang + "</strong><small>" + L.addLangHelp + '</small></div><div class="steps"><select id="add-lang" aria-label="' + L.addLang + '" style="width:auto">' + addable.map((m) => '<option value="' + m.code + '">' + L.langNames[m.code] + " · " + m.size_mb + " MB</option>").join("") + '</select><button class="btn btn-small" data-action="add-lang">' + L.addLang + "</button></div></div>" : "") + "</section>";
 }
 // ---------- screens ----------
+
+function parseEventToCombo(ev) {
+  const code = ev.code || "";
+  const key = ev.key || "";
+  const parts = [];
+  const isCtrl = ev.ctrlKey || code.startsWith("Control");
+  const isAlt = ev.altKey || code.startsWith("Alt");
+  const isShift = ev.shiftKey || code.startsWith("Shift");
+  const isWin = ev.metaKey || code.startsWith("Meta") || key === "Meta" || code === "OSLeft" || code === "OSRight";
+  if (isCtrl) parts.push("Ctrl");
+  if (isWin) parts.push("Win");
+  if (isAlt) parts.push("Alt");
+  if (isShift) parts.push("Shift");
+  let mainKey = "";
+  if (code.startsWith("Key") && code.length === 4) {
+    mainKey = code.slice(3).toUpperCase();
+  } else if (code.startsWith("Digit") && code.length === 6) {
+    mainKey = code.slice(5);
+  } else if (/^F\d{1,2}$/i.test(key) || /^F\d{1,2}$/i.test(code)) {
+    mainKey = (key.startsWith("F") ? key : code).toUpperCase();
+  } else if (code === "Space" || key === " ") {
+    mainKey = "Space";
+  } else if (code === "CapsLock" || key === "CapsLock") {
+    mainKey = "CapsLock";
+  } else if (code === "Tab" || key === "Tab") {
+    mainKey = "Tab";
+  } else if (code === "Enter" || key === "Enter") {
+    mainKey = "Enter";
+  } else if (code === "Escape" || key === "Escape") {
+    mainKey = "Escape";
+  } else if (code === "Backspace" || key === "Backspace") {
+    mainKey = "Backspace";
+  } else if (code === "Delete" || key === "Delete") {
+    mainKey = "Delete";
+  } else if (code === "Insert" || key === "Insert") {
+    mainKey = "Insert";
+  } else if (code === "PrintScreen") {
+    mainKey = "PrintScreen";
+  } else if (code === "ScrollLock") {
+    mainKey = "ScrollLock";
+  } else if (code === "Pause") {
+    mainKey = "Pause";
+  } else if (code === "NumLock") {
+    mainKey = "NumLock";
+  } else if (code === "Backquote") {
+    mainKey = "`";
+  } else if (code === "Minus") {
+    mainKey = "-";
+  } else if (code === "Equal") {
+    mainKey = "=";
+  } else if (code === "BracketLeft") {
+    mainKey = "[";
+  } else if (code === "BracketRight") {
+    mainKey = "]";
+  } else if (code === "Backslash") {
+    mainKey = "\\";
+  } else if (code === "Semicolon") {
+    mainKey = ";";
+  } else if (code === "Quote") {
+    mainKey = "'";
+  } else if (code === "Comma") {
+    mainKey = ",";
+  } else if (code === "Period") {
+    mainKey = ".";
+  } else if (code === "Slash") {
+    mainKey = "/";
+  } else if (code.startsWith("Arrow")) {
+    mainKey = code.slice(5);
+  } else if (code.startsWith("Numpad") && /^Numpad\d$/.test(code)) {
+    mainKey = code;
+  } else if (!["Control", "Shift", "Alt", "Meta"].includes(key) &&
+             !code.startsWith("Control") && !code.startsWith("Shift") &&
+             !code.startsWith("Alt") && !code.startsWith("Meta") &&
+             !code.startsWith("OS")) {
+    mainKey = key.length === 1 ? key.toUpperCase() : key;
+  }
+  if (mainKey && !parts.includes(mainKey)) {
+    parts.push(mainKey);
+  }
+  return { combo: parts.join("+"), isFinal: !!mainKey, hasAny: parts.length > 0 };
+}
+
 function shortcutsSection() {
   const lang = ui.wordsLang;
   const list = ui.draft.shortcuts || [];
@@ -354,7 +436,10 @@ function shortcutsSection() {
       return '<div class="shortcut-item' + (sc.enabled ? "" : " disabled") + '">' +
         '<div class="shortcut-header">' +
         '<input class="text-input" style="flex:2;min-width:140px" data-text="shortcuts.' + i + '.name" placeholder="' + L.scNamePlaceholder + '" value="' + esc(sc.name) + '">' +
-        '<input class="text-input" style="flex:2;min-width:140px" data-text="shortcuts.' + i + '.hotkey" placeholder="' + L.scHotkeyPlaceholder + '" value="' + esc(sc.hotkey) + '">' +
+        '<div class="hotkey-field">' +
+        '<button type="button" class="hotkey-input' + (ui.recordingSc === i ? " recording" : "") + '" data-record-sc="' + i + '" title="' + L.scRecordHelp + '">' + esc(ui.recordingSc === i ? (ui.recordedCombo || L.scPressKeys) : (sc.hotkey || L.scPressKeys)) + '</button>' +
+        (sc.hotkey ? '<button class="hotkey-clear" data-action="clear-sc-hotkey" data-i="' + i + '" title="' + L.scClear + '">×</button>' : "") +
+        '</div>' +
         '<label class="switch" title="' + L.scToggle + '"><input type="checkbox" data-key="shortcuts.' + i + '.enabled"' + (sc.enabled ? " checked" : "") + '><span></span></label>' +
         '<button class="btn btn-small" data-action="test-sc-hotkey" data-hotkey="' + esc(sc.hotkey) + '" title="' + L.scTry + '">' + icon("play") + "</button>" +
         '<button class="btn btn-small btn-danger" data-action="delete-shortcut" data-i="' + i + '" title="' + L.scDelete + '">' + icon("warn") + "</button>" +
@@ -707,6 +792,7 @@ document.addEventListener("click", async (ev) => {
   if (d.asstFile) { ui.asstFile = d.asstFile; ui.asstNote = ""; render(); return; }
   if (d.setTab) { ui.settingsTab = d.setTab; render(); return; }
   if (d.cmdTab) { ui.cmdTab = d.cmdTab; render(); return; }
+  if (d.recordSc != null) { const idx = Number(d.recordSc); ui.recordingSc = idx; ui.recordedCombo = ""; render(); return; }
   if (d.asstTab) { ui.asstTab = d.asstTab; ui.asstNote = ""; render(); return; }
   if (d.seg) { const v = d.v === "true" ? true : d.v === "false" ? false : d.v; await setDraft(d.seg, v); render(); updateSaveBar(); return; }
   if (d.filter) { ui.filter = d.filter; render(); return; }
@@ -730,6 +816,12 @@ document.addEventListener("click", async (ev) => {
       };
       ui.draft.shortcuts = [...(ui.draft.shortcuts || []), newSc];
       render(); updateSaveBar(); break;
+    }
+    case "clear-sc-hotkey": {
+      const idx = Number(d.i);
+      ui.draft.shortcuts[idx].hotkey = "";
+      delete ui.errors["shortcuts." + idx + ".hotkey"];
+      updateSaveBar(); render(); break;
     }
     case "delete-shortcut": {
       const idx = Number(d.i);
@@ -837,6 +929,33 @@ document.addEventListener("change", async (ev) => {
   if (t.tagName === "SELECT" && t.dataset.key) { await setDraft(t.dataset.key, t.value); render(); updateSaveBar(); }
 });
 document.addEventListener("keydown", async (ev) => {
+  if (ui.recordingSc != null) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const i = ui.recordingSc;
+    if (ev.key === "Escape" && !ev.ctrlKey && !ev.altKey && !ev.shiftKey && !ev.metaKey) {
+      ui.recordingSc = null;
+      ui.recordedCombo = "";
+      render();
+      return;
+    }
+    const res = parseEventToCombo(ev);
+    if (res.hasAny) {
+      ui.recordedCombo = res.combo;
+      if (res.isFinal) {
+        ui.draft.shortcuts[i].hotkey = res.combo;
+        delete ui.errors["shortcuts." + i + ".hotkey"];
+        ui.recordingSc = null;
+        ui.recordedCombo = "";
+        updateSaveBar();
+        render();
+        return;
+      }
+      const inp = $('[data-record-sc="' + i + '"]');
+      if (inp) inp.value = res.combo;
+    }
+    return;
+  }
   const t = ev.target;
   if (t.dataset?.add && (ev.key === "Enter" || ev.key === "Escape")) {
     const key = t.dataset.add, word = normWord(t.value);
@@ -854,6 +973,19 @@ document.addEventListener("keydown", async (ev) => {
 document.addEventListener("focusout", (ev) => {
   if (ev.target.dataset?.add && ui.adding) setTimeout(() => { if (ui.adding && document.activeElement?.dataset?.add !== ui.adding) { ui.adding = null; render(); } }, 0);
 });
+
+document.addEventListener("keyup", (ev) => {
+  if (ui.recordingSc != null && ui.recordedCombo) {
+    const i = ui.recordingSc;
+    ui.draft.shortcuts[i].hotkey = ui.recordedCombo;
+    delete ui.errors["shortcuts." + i + ".hotkey"];
+    ui.recordingSc = null;
+    ui.recordedCombo = "";
+    updateSaveBar();
+    render();
+  }
+});
+
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
 
 (async () => {
@@ -874,4 +1006,5 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme
   renderLive();
   setTimeout(poll, 500);
 })();
+
 
