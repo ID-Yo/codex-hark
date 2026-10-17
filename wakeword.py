@@ -353,6 +353,16 @@ def _validate_languages(value, known_word, msg, errors):
             errors[f"languages.{code}"] = msg("type")
             langs[code] = clean
             continue
+        if "dictate_words" not in entry:
+            moved = [w for w in entry.get("send_words", []) if w in default.get("dictate_words", [])]
+            if moved:
+                clean["dictate_words"] = list(dict.fromkeys(clean.get("dictate_words", []) + moved))
+                if isinstance(entry.get("send_words"), list):
+                    entry["send_words"] = [w for w in entry["send_words"] if w not in moved]
+            else:
+                clean["dictate_words"] = [w for w in clean.get("dictate_words", [])
+                                          if w not in entry.get("send_words", [])
+                                          and w not in entry.get("draft_words", [])]
         if "enabled" in entry:
             if isinstance(entry["enabled"], bool):
                 clean["enabled"] = entry["enabled"]
