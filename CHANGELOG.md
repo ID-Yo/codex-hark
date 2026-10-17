@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-17
+
+### Added
+- **Custom Installation Folder**: select any destination package/folder for installing Hark, with automatic copying of the executable and updating Start Menu and Desktop shortcuts and Windows uninstall registration.
+- **Settings Screen Sidebar Navigation**: modern layout with a left navigation bar (General, Languages, Microphone, Installation & Windows, Updates) and dedicated right panel displaying options and live values.
+
 ## [0.17.2] - 2026-10-17
 
 ### Fixed

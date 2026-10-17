@@ -188,30 +188,59 @@ def create_windows_shortcut(target, lnk_path, icon_location=None, work_dir=None,
     subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], input=payload, text=True, check=True)
 
 
-def install_app(exe_path=None):
-    """Create Start Menu and Desktop shortcuts and register in Windows Add/Remove Programs."""
-    exe = exe_path or (sys.executable if getattr(sys, "frozen", False) else os.path.abspath(sys.argv[0]))
+def default_install_folder():
+    local = os.environ.get("LOCALAPPDATA", "")
+    return os.path.join(local, "Programs", ww.APP_NAME) if local else os.path.dirname(sys.executable)
+
+
+def get_install_folder():
+    try:
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexHark"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            loc = winreg.QueryValueEx(key, "InstallLocation")[0]
+            if loc and os.path.isdir(loc):
+                return loc
+    except OSError:
+        pass
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return default_install_folder()
+
+
+def install_app(target_folder=None):
+    """Install Hark into target_folder (or current/default folder), create Start Menu and Desktop shortcuts and register in Windows."""
+    cur_exe = sys.executable if getattr(sys, "frozen", False) else os.path.abspath(sys.argv[0])
+    folder = os.path.normpath(target_folder or get_install_folder() or default_install_folder())
+    os.makedirs(folder, exist_ok=True)
+    target_exe = os.path.join(folder, "CodexHark.exe")
+    if getattr(sys, "frozen", False) and os.path.normcase(cur_exe) != os.path.normcase(target_exe):
+        try:
+            shutil.copy2(cur_exe, target_exe)
+        except OSError as e:
+            logging.warning("could not copy exe to %s: %s", target_exe, e)
+            target_exe = cur_exe
+            folder = os.path.dirname(cur_exe)
+    exe = target_exe if os.path.exists(target_exe) else cur_exe
     icon = os.path.join(ww.DATA_DIR, "icon.ico")
     save_icon(icon)
     start_menu, desktop = get_install_paths()
-    create_windows_shortcut(exe, start_menu, icon, os.path.dirname(exe))
-    create_windows_shortcut(exe, desktop, icon, os.path.dirname(exe))
+    create_windows_shortcut(exe, start_menu, icon, folder)
+    create_windows_shortcut(exe, desktop, icon, folder)
     try:
         key_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexHark"
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
             winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "Codex Hark")
             winreg.SetValueEx(key, "DisplayVersion", 0, winreg.REG_SZ, ww.__version__)
             winreg.SetValueEx(key, "Publisher", 0, winreg.REG_SZ, "Ivan Yosifov")
-            winreg.SetValueEx(key, "InstallLocation", 0, winreg.REG_SZ, os.path.dirname(exe))
+            winreg.SetValueEx(key, "InstallLocation", 0, winreg.REG_SZ, folder)
             winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, f'"{icon}"')
             winreg.SetValueEx(key, "UninstallString", 0, winreg.REG_SZ, f'"{exe}" --uninstall')
             winreg.SetValueEx(key, "URLInfoAbout", 0, winreg.REG_SZ, "https://ivanyosifov.com")
             winreg.SetValueEx(key, "HelpLink", 0, winreg.REG_SZ, "https://github.com/ID-Yo/codex-hark")
     except OSError:
         pass
-    logging.info("app installed: %s, %s", start_menu, desktop)
-    return True
-
+    logging.info("app installed into %s: %s, %s", folder, start_menu, desktop)
+    return folder
 
 def uninstall_app():
     """Remove Start Menu and Desktop shortcuts and unregister from Windows."""
@@ -298,7 +327,7 @@ class Api:
     def get_settings(self):
         app = self._app
         return {"settings": app.settings, "defaults": ww.DEFAULTS, "limits": ww.LIMITS,
-                "devices": ww.input_devices(), "autostart": autostart_command() is not None, "installed": is_app_installed(),
+                "devices": ww.input_devices(), "autostart": autostart_command() is not None, "installed": is_app_installed(), "install_folder": get_install_folder(),
                 "system_dark": system_dark(), "version": ww.__version__, "lang": app.lang(),
                 "hotkeys": ww.codex_hotkeys(),
                 "added_languages": {code: ww.language_defaults(code) for code in ww.ADDED_LANGUAGES}}
@@ -447,14 +476,15 @@ class Api:
         ok = ww.press_hotkey(hotkey)
         return {"ok": ok}
 
-    def install_app(self):
-        """Install Hark shortcuts in Start Menu and Desktop and register in Windows."""
+    def install_app(self, folder=None):
+        """Install Hark into chosen folder, create shortcuts and register in Windows."""
         try:
-            install_app()
-            return {"ok": True, "installed": True, "text": {"bg": "Hark е инсталиран в Start Menu и на работния плот с икона.", "en": "Hark installed to Start Menu and Desktop with icon."}[self._app.lang()]}
+            installed_folder = install_app(folder)
+            return {"ok": True, "installed": True, "folder": installed_folder,
+                    "text": {"bg": f"Hark е инсталиран в {installed_folder} с преки пътища в Start Menu и Desktop.",
+                             "en": f"Hark installed to {installed_folder} with Start Menu and Desktop shortcuts."}[self._app.lang()]}
         except Exception as e:
-            return {"ok": False, "installed": is_app_installed(), "text": str(e)}
-
+            return {"ok": False, "installed": is_app_installed(), "folder": get_install_folder(), "text": str(e)}
     def uninstall_app(self):
         """Remove Hark shortcuts from Start Menu and Desktop."""
         try:
@@ -863,7 +893,7 @@ def migrate_legacy_autostart():
 def main(argv=None):
     parser = argparse.ArgumentParser(prog=ww.APP_NAME)
     parser.add_argument("--autostart", choices=["on", "off"], help="turn start with Windows on or off")
-    parser.add_argument("--install", action="store_true", help="install Start Menu and Desktop shortcuts and register in Windows")
+    parser.add_argument("--install", nargs="?", const="", help="install to folder (or default) with Start Menu and Desktop shortcuts and register in Windows")
     parser.add_argument("--uninstall", action="store_true", help="remove shortcuts and Windows uninstall registration")
     parser.add_argument("--hidden", action="store_true", help="start in the tray without opening the window")
     parser.add_argument("--after-update", action="store_true", help=argparse.SUPPRESS)
@@ -873,9 +903,9 @@ def main(argv=None):
     if args.autostart:
         set_autostart(args.autostart == "on")
         return
-    if args.install:
-        install_app()
-        print("Codex Hark installed successfully.")
+    if args.install is not None:
+        folder = install_app(args.install or None)
+        print(f"Codex Hark installed successfully to {folder}.")
         return
     if args.uninstall:
         uninstall_app()

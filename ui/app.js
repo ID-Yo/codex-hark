@@ -53,7 +53,7 @@ const I18N = {
     actEyebrow: "Дневник", actTitle: "Какво се е случило", actNote: "Пазят се последните 1000 събития. Аудио и текст от диктовката не се записват.",
     logFolder: "Папка с лога", copy: "Копирай", copied: "Копирано", copyFailed: "Неуспешно копиране", search: "Търсене", filters: ["Всички", "Гласов чат", "Диктовка", "Грешки"],
     time: "Време", event: "Събитие", details: "Подробности", none: "Няма събития.",
-    setEyebrow: "Настройки", setTitle: "Приложение", setNote: "Тези настройки се запазват веднага.",
+    setEyebrow: "Настройки", setTitle: "Приложение", setNote: "Тези настройки се запазват веднага.", setGeneral: "Общи", setLanguages: "Езици", setMic: "Микрофон", setWindows: "Инсталация и Windows", setUpdates: "Обновления", appInstallFolder: "Инсталационна папка",
     autostart: "Стартирай с Windows", autostartHelp: "Иконата се появява в трея след влизане.", notifications: "Известия", notificationsHelp: "При проблем: няма микрофон, Codex не е отворен.",
     beep: "Звуков сигнал при задействане", beepHelp: "Кратък тон, когато чуе ключовата дума.", theme: "Тема", themes: ["Светла", "Тъмна", "Системна"],
     language: "Език", languages: ["Български", "English", "Като Windows"],
@@ -107,7 +107,7 @@ const I18N = {
     actEyebrow: "Activity", actTitle: "What happened", actNote: "The last 1000 events are kept. Audio and dictated text are never stored.",
     logFolder: "Log folder", copy: "Copy", copied: "Copied", copyFailed: "Copy failed", search: "Search", filters: ["All", "Voice chat", "Dictation", "Errors"],
     time: "Time", event: "Event", details: "Details", none: "No events.",
-    setEyebrow: "Settings", setTitle: "Application", setNote: "These settings are saved right away.",
+    setEyebrow: "Settings", setTitle: "Application", setNote: "These settings are saved right away.", setGeneral: "General", setLanguages: "Languages", setMic: "Microphone", setWindows: "Installation & Windows", setUpdates: "Updates", appInstallFolder: "Installation folder",
     autostart: "Start with Windows", autostartHelp: "The tray icon appears after you sign in.", notifications: "Notifications", notificationsHelp: "On problems: no microphone, Codex not open.",
     beep: "Beep on trigger", beepHelp: "A short tone when it hears the wake word.", theme: "Theme", themes: ["Light", "Dark", "System"],
     language: "Language", languages: ["Български", "English", "Same as Windows"],
@@ -125,7 +125,7 @@ const FILTERS = { all: null, chat: ["chat"], dictation: ["dictation", "sent", "i
 
 const ui = {
   targets: { threads: [], projects: [] },
-  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "",
+  asstInfo: null, asstFile: "AGENTS.md", asstEdits: {}, asstNote: "", asstPick: "", settingsTab: "general", installFolderPick: "",
   screen: location.hash.slice(1).split("-")[0] || "home",
   live: null, events: [], lastId: 0, lang: null,
   saved: null, draft: null, meta: null, errors: {}, notice: null,
@@ -173,7 +173,7 @@ function fixtureApi() {
     create_assistant: async (f) => { const folder = f || asstFolder; asstFolder = folder; settings = { ...settings, chat_target: "project", chat_project: folder, assistant_folder: folder, chat_continue_minutes: settings.chat_continue_minutes || 30 }; asstReady = true; return { ok: true, folder: settings.assistant_folder, project: true, settings }; },
     assistant_info: async () => ({ folder: asstFolder, ready: asstReady, project: asstReady, models: [{ slug: "gpt-6-astra", name: "GPT-6-Astra" }, { slug: "gpt-6.1-sol", name: "GPT-6.1-Sol" }], files: asstReady ? { ...asstFiles } : {} }),
     save_assistant_file: async (f, t) => { asstFiles[f] = t; return { ok: true }; }, open_assistant_folder: async () => true,
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.18.0 — you have 0.17.0", version: "0.18.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.18.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.19.0 — you have 0.18.0", version: "0.19.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.19.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -436,22 +436,67 @@ const screens = {
       "</tbody></table></section>";
   },
   settings() {
-    const m = ui.meta;
-    return (dirty() ? saveBar() : "") + '<div class="intro"><div><div class="eyebrow">' + L.setEyebrow + "</div><h1>" + L.setTitle + "</h1><small>" + L.setNote + "</small></div></div>" +
-      '<section class="card" style="gap:0">' +
-      '<div class="set"><div><strong>' + L.language + "</strong></div>" + seg("language", [["en", L.languages[1]], ["bg", L.languages[0]], ["auto", L.languages[2]]]) + "</div>" +
-      '<div class="set"><div><strong>' + L.notifications + "</strong><small>" + L.notificationsHelp + "</small></div>" + toggle("notifications", L.notifications) + "</div>" +
-      '<div class="set"><div><strong>' + L.beep + "</strong><small>" + L.beepHelp + "</small></div>" + toggle("beep", L.beep) + "</div>" +
-      '<div class="set"><div><strong>' + L.theme + "</strong></div>" + seg("theme", [["light", L.themes[0]], ["dark", L.themes[1]], ["system", L.themes[2]]]) + "</div>" +
-      '<div class="set"><div><strong>' + L.keysTitle + "</strong><small>" + esc(ui.keysNote || L.keysHelp) + '</small></div><button class="btn btn-small" data-action="check-keys">' + L.keysCheck + "</button></div>" + updatesRow() + "</section>" +
-      '<div class="grid2">' + languagesCard() +
-      '<section class="card" style="gap:0"><div><h2>' + L.windowsTitle + "</h2><small>" + L.windowsHelp + "</small></div>" +
-      '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
-'<div class="set"><div><strong>' + L.appInstall + "</strong><small>" + (m.installed ? L.appInstalled : L.appNotInstalled) + '</small></div>' +
-'<div class="steps">' + (m.installed ? '<button class="btn btn-small" data-action="install-app">' + icon("folder") + L.installNow + '</button><button class="btn btn-small btn-danger" data-action="uninstall-app">' + L.uninstallApp + '</button>' : '<button class="btn btn-small btn-primary" data-action="install-app">' + icon("folder") + L.installNow + '</button>') + '</div></div>' +
+    const m = ui.meta, d = ui.draft;
+    const tab = ui.settingsTab || "general";
+    const navItems = [
+      ["general", L.setGeneral, "gear"],
+      ["languages", L.setLanguages, "chat"],
+      ["mic", L.setMic, "mic"],
+      ["windows", L.setWindows, "folder"],
+      ["updates", L.setUpdates, "play"],
+    ];
+    const leftNav = '<nav class="settings-nav" aria-label="' + L.setTitle + '">' +
+      navItems.map(([id, title, ic]) =>
+        '<button class="settings-nav-btn" data-set-tab="' + id + '" aria-selected="' + (tab === id) + '" role="tab">' +
+        icon(ic) + '<span>' + esc(title) + '</span></button>'
+      ).join("") + '</nav>';
 
-      '<div class="steps" style="padding-top:10px">' + '<button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
-      (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>" + screens.micCards();
+    let rightContent = "";
+    if (tab === "general") {
+      rightContent = '<section class="card" style="gap:0">' +
+        '<div><h2>' + L.setGeneral + '</h2><small>' + L.setNote + '</small></div>' +
+        '<div class="set"><div><strong>' + L.language + '</strong></div>' + seg("language", [["en", L.languages[1]], ["bg", L.languages[0]], ["auto", L.languages[2]]]) + '</div>' +
+        '<div class="set"><div><strong>' + L.notifications + '</strong><small>' + L.notificationsHelp + '</small></div>' + toggle("notifications", L.notifications) + '</div>' +
+        '<div class="set"><div><strong>' + L.beep + '</strong><small>' + L.beepHelp + '</small></div>' + toggle("beep", L.beep) + '</div>' +
+        '<div class="set"><div><strong>' + L.theme + '</strong></div>' + seg("theme", [["light", L.themes[0]], ["dark", L.themes[1]], ["system", L.themes[2]]]) + '</div>' +
+        '<div class="set"><div><strong>' + L.keysTitle + '</strong><small>' + esc(ui.keysNote || L.keysHelp) + '</small></div><button class="btn btn-small" data-action="check-keys">' + L.keysCheck + '</button></div>' +
+        '</section>';
+    } else if (tab === "languages") {
+      rightContent = languagesCard();
+    } else if (tab === "mic") {
+      rightContent = screens.micCards();
+    } else if (tab === "windows") {
+      const curFolder = ui.installFolderPick || m.install_folder || "";
+      rightContent = '<section class="card" style="gap:0">' +
+        '<div><h2>' + L.windowsTitle + '</h2><small>' + L.windowsHelp + '</small></div>' +
+        '<div class="set"><div><strong>' + L.autostart + '</strong><small>' + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + '><span></span></label></div>' +
+        '<div class="set"><div><strong>' + L.appInstall + '</strong><small>' + (m.installed ? L.appInstalled : L.appNotInstalled) + '</small>' +
+        (curFolder ? '<small style="margin-top:4px;word-break:break-all">' + L.appInstallFolder + ': <strong>' + esc(curFolder) + '</strong></small>' : '') +
+        '</div>' +
+        '<div class="steps">' +
+        '<button class="btn btn-small" data-action="choose-install-folder">' + icon("folder") + L.asstChoose + '</button>' +
+        (m.installed ? '<button class="btn btn-small" data-action="install-app">' + icon("ok") + L.installNow + '</button><button class="btn btn-small btn-danger" data-action="uninstall-app">' + L.uninstallApp + '</button>'
+                     : '<button class="btn btn-small btn-primary" data-action="install-app">' + icon("folder") + L.installNow + '</button>') +
+        '</div></div>' +
+        '<div class="steps" style="padding-top:14px">' +
+        '<button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button>' +
+        '<button class="btn btn-small btn-danger" data-action="reset">' + L.reset + '</button>' +
+        '</div>' +
+        (ui.notice ? '<div class="alert ' + ui.notice[0] + '" style="margin-top:10px">' + esc(ui.notice[1]) + '</div>' : '') +
+        '</section>';
+    } else if (tab === "updates") {
+      rightContent = '<section class="card" style="gap:0">' +
+        '<div><h2>' + L.updTitle + '</h2><small>' + L.updHelp + '</small></div>' +
+        updatesRow() +
+        '</section>';
+    }
+
+    return (dirty() ? saveBar() : "") +
+      '<div class="intro"><div><div class="eyebrow">' + L.setEyebrow + '</div><h1>' + L.setTitle + '</h1><small>' + L.setNote + '</small></div></div>' +
+      '<div class="settings-layout">' +
+      leftNav +
+      '<div class="settings-content">' + rightContent + '</div>' +
+      '</div>';
   },
   assistant() {
     const info = ui.asstInfo, d = ui.draft, a = ui.asst;
@@ -600,6 +645,7 @@ document.addEventListener("click", async (ev) => {
     if (ui.screen === "settings" && api.last_update && !ui.updChecking) api.last_update().then((u) => { if (u && ui.screen === "settings") { ui.update = u; render(); } });
     return; }
   if (d.asstFile) { ui.asstFile = d.asstFile; ui.asstNote = ""; render(); return; }
+  if (d.setTab) { ui.settingsTab = d.setTab; render(); return; }
   if (d.seg) { const v = d.v === "true" ? true : d.v === "false" ? false : d.v; await setDraft(d.seg, v); render(); updateSaveBar(); return; }
   if (d.filter) { ui.filter = d.filter; render(); return; }
   if (d.remove) { setP(ui.draft, d.remove, getP(ui.draft, d.remove).filter((_, i) => i !== Number(d.i))); delete ui.errors[d.remove]; ui.notice = null; render(); return; }
@@ -632,8 +678,14 @@ document.addEventListener("click", async (ev) => {
       if (d.hotkey && api.test_hotkey) await api.test_hotkey(d.hotkey);
       break;
     }
+    case "choose-install-folder": {
+      const f = await api.choose_folder(ui.installFolderPick || ui.meta.install_folder || "");
+      if (f) { ui.installFolderPick = f; render(); }
+      break;
+    }
     case "install-app": {
-      const r = await api.install_app();
+      const r = await api.install_app(ui.installFolderPick || null);
+      if (r.folder) ui.meta.install_folder = r.folder;
       ui.meta.installed = r.installed;
       ui.notice = [r.ok ? "ok" : "err", r.text];
       render(); break;
