@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-10-17
+
+### Fixed
+- Robust Desktop path resolution on systems with redirected Desktop folders.
+
 ## [0.17.0] - 2026-10-17
 
 ### Added

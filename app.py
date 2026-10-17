@@ -1,3 +1,4 @@
+import json
 """Codex Hark: tray icon, window and listener in one process (CodexHark.exe)."""
 import argparse
 import ctypes
@@ -144,11 +145,23 @@ def set_autostart(enabled):
         logging.info("removed old startup shortcut %s", OLD_SHORTCUT)
 
 
+def desktop_dir():
+    buf = ctypes.create_unicode_buffer(260)
+    if ctypes.windll.shell32.SHGetFolderPathW(None, 0x0010, None, 0, buf) == 0 and buf.value:  # CSIDL_DESKTOPDIRECTORY
+        return buf.value
+    return os.path.join(os.path.expanduser("~"), "Desktop")
+
+
+def programs_dir():
+    buf = ctypes.create_unicode_buffer(260)
+    if ctypes.windll.shell32.SHGetFolderPathW(None, 0x0002, None, 0, buf) == 0 and buf.value:  # CSIDL_PROGRAMS
+        return buf.value
+    return os.path.join(os.environ.get("APPDATA", ""), "Microsoft", "Windows", "Start Menu", "Programs")
+
+
 def get_install_paths():
-    appdata = os.environ.get("APPDATA", "")
-    userprofile = os.environ.get("USERPROFILE", "")
-    start_menu = os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs", "Codex Hark.lnk")
-    desktop = os.path.join(userprofile, "Desktop", "Codex Hark.lnk")
+    start_menu = os.path.join(programs_dir(), "Codex Hark.lnk")
+    desktop = os.path.join(desktop_dir(), "Codex Hark.lnk")
     return start_menu, desktop
 
 
