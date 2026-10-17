@@ -52,7 +52,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     TreeScope_Descendants, UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId,
     UIA_LegacyIAccessiblePatternId, UIA_NamePropertyId)
 
-__version__ = "0.21.0"
+__version__ = "0.22.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -105,25 +105,26 @@ ADDED_LANGUAGES = {
     "bg": {
         # "кодекс" also matches English "Codex"; "кодекса" covers "Кодекс, отвори...".
         "wake_words": ["кодекс", "кодекса"],
+        "dictate_words": ["запиши"],
         "send_words": ["пиши"],  # dictate, then send to the agent
         "draft_words": ["чернова"],  # dictate, then leave the text in the message box
         "stop_words": ["стоп", "край"],  # end a voice chat at once
         # Similar-sounding words give the recognizer somewhere else to put near misses.
         "decoys": ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"],
     },
-    "de": {"wake_words": ["codex", "kodex"], "send_words": ["schreib"], "draft_words": ["entwurf"],
+    "de": {"wake_words": ["codex", "kodex"], "dictate_words": ["diktat"], "send_words": ["schreib"], "draft_words": ["entwurf"],
            "stop_words": ["stopp", "ende"], "decoys": ["code", "text", "test", "index", "kontext"]},
-    "fr": {"wake_words": ["codex"], "send_words": ["écris"], "draft_words": ["brouillon"],
+    "fr": {"wake_words": ["codex"], "dictate_words": ["dictée"], "send_words": ["écris"], "draft_words": ["brouillon"],
            "stop_words": ["stop", "fin"], "decoys": ["code", "codes", "texte", "contexte", "index"]},
-    "es": {"wake_words": ["codex"], "send_words": ["escribe"], "draft_words": ["borrador"],
+    "es": {"wake_words": ["codex"], "dictate_words": ["dictar"], "send_words": ["escribe"], "draft_words": ["borrador"],
            "stop_words": ["alto", "stop"], "decoys": ["código", "texto", "contexto", "índice"]},
-    "it": {"wake_words": ["codex"], "send_words": ["scrivi"], "draft_words": ["bozza"],
+    "it": {"wake_words": ["codex"], "dictate_words": ["detta"], "send_words": ["scrivi"], "draft_words": ["bozza"],
            "stop_words": ["stop", "basta"], "decoys": ["codice", "testo", "contesto", "indice"]},
-    "pl": {"wake_words": ["kodeks", "codex"], "send_words": ["pisz"], "draft_words": ["szkic"],
+    "pl": {"wake_words": ["kodeks", "codex"], "dictate_words": ["dyktuj"], "send_words": ["pisz"], "draft_words": ["szkic"],
            "stop_words": ["stop", "koniec"], "decoys": ["kod", "kody", "tekst", "test", "indeks"]},
-    "nl": {"wake_words": ["codex"], "send_words": ["schrijf"], "draft_words": ["concept"],
+    "nl": {"wake_words": ["codex"], "dictate_words": ["dicteer"], "send_words": ["schrijf"], "draft_words": ["concept"],
            "stop_words": ["stop"], "decoys": ["code", "tekst", "test", "context"]},
-    "uk": {"wake_words": ["кодекс"], "send_words": ["пиши"], "draft_words": ["чернетка"],
+    "uk": {"wake_words": ["кодекс"], "dictate_words": ["запиши"], "send_words": ["пиши"], "draft_words": ["чернетка"],
            "stop_words": ["стоп", "кінець"], "decoys": ["код", "текст", "тест", "індекс"]},
 }
 
@@ -132,6 +133,7 @@ DEFAULTS = {
         "en": {
             "enabled": True,
             "wake_words": ["codex"],
+            "dictate_words": ["dictate", "dictation"],
             "send_words": ["write"],
             "draft_words": ["draft"],
             "stop_words": ["stop"],
@@ -145,6 +147,7 @@ DEFAULTS = {
     "chat_thread": "",  # the Codex thread id for "thread"
     "chat_project": "",  # the project folder for "project"
     "dictation_enabled": True,
+    "dictation_idle_close": True,
     "min_conf": 0.5,
     "idle_seconds": 10,  # end the voice chat after this much silence from you and Codex
     "dictation_idle_seconds": 4,  # end a dictation after this much silence from you
@@ -168,6 +171,8 @@ DEFAULTS = {
             "id": "openwhispr",
             "name": "OpenWhispr",
             "hotkey": "Ctrl+Shift+Space",
+            "idle_close": True,
+            "idle_seconds": 4,
             "enabled": True,
             "words": {
                 "en": ["whisper"],
@@ -179,8 +184,8 @@ DEFAULTS = {
 # Allowed range of each number setting.
 LIMITS = {"chat_continue_minutes": (0, 240), "min_conf": (0.2, 0.95), "idle_seconds": (3, 120), "dictation_idle_seconds": (1, 30),
           "speech_rms": (20, 5000), "codex_audio_peak": (0.001, 0.5), "cooldown_seconds": (1, 60)}
-WORD_LISTS = ("wake_words", "send_words", "draft_words", "stop_words", "decoys")
-COMMAND_LISTS = WORD_LISTS[:4]  # a word may appear in only one of these per language
+WORD_LISTS = ("wake_words", "dictate_words", "send_words", "draft_words", "stop_words", "decoys")
+COMMAND_LISTS = WORD_LISTS[:5]  # a word may appear in only one of these per language
 OLD_WORD_KEYS = ("wake_words", "dictate_words", "stop_words", "decoys", "dictation_send")
 THEMES = ("system", "light", "dark")
 CHAT_TARGETS = ("new", "thread", "project")
@@ -317,7 +322,7 @@ def _clean_words(value):
 
 def _word_error(key, words, code, known_word, msg):
     """The message for the first problem in one word list, or None. Only wake_words may hold phrases."""
-    limit = MAX_PHRASE_WORDS if key == "wake_words" else 1
+    limit = MAX_PHRASE_WORDS if key in ("wake_words", "dictate_words") else 1
     long = ", ".join(w for w in words if len(w.split()) > limit)
     if long:
         return msg("too_long", n=limit, words=long) if limit > 1 else msg("one_word", words=long)
@@ -392,6 +397,11 @@ def _validate_shortcuts(raw_list, known_word, msg, errors):
         enabled = bool(item.get("enabled", True))
         if not parse_hotkey(hotkey):
             errors[f"shortcuts.{idx}.hotkey"] = msg("hotkey_invalid")
+        idle_close = bool(item.get("idle_close", True))
+        try:
+            idle_seconds = max(1, min(30, int(item.get("idle_seconds", 4))))
+        except (ValueError, TypeError):
+            idle_seconds = 4
         raw_words = item.get("words", {})
         cleaned_words = {}
         if isinstance(raw_words, dict):
@@ -408,6 +418,8 @@ def _validate_shortcuts(raw_list, known_word, msg, errors):
             "id": sc_id,
             "name": name,
             "hotkey": hotkey,
+            "idle_close": idle_close,
+            "idle_seconds": idle_seconds,
             "enabled": enabled,
             "words": cleaned_words,
         })
@@ -459,6 +471,7 @@ def migrate_settings(raw):
                 bg["send_words"] = raw["dictate_words"]
             else:
                 bg["draft_words"], bg["send_words"] = raw["dictate_words"], []
+            bg["dictate_words"] = [w for w in bg.get("dictate_words", []) if w not in bg["send_words"] and w not in bg["draft_words"]]
         raw["languages"] = {"bg": bg, "en": DEFAULTS["languages"]["en"]}
     for key in OLD_WORD_KEYS:
         raw.pop(key, None)
@@ -914,7 +927,8 @@ def heard(result_json, words, min_conf):
     mean of theirs. Longer phrases win over shorter ones that start at the same word.
     """
     found = json.loads(result_json).get("result", [])
-    phrases = sorted((p.split() for p in words["wake_words"]), key=len, reverse=True)
+    wake_list = words.get("wake_words", []) + words.get("dictate_words", [])
+    phrases = sorted((p.split() for p in wake_list if p), key=len, reverse=True)
     for i in range(len(found)):
         for phrase in phrases:
             part = found[i:i + len(phrase)]
@@ -1444,7 +1458,9 @@ class Listener:
             return hits, sc_hits
 
         def is_command(hit):
-            words, _, following, _ = hit
+            words, wake, following, _ = hit
+            if any(wake == dw or wake.split() == dw.split() for dw in words.get("dictate_words", [])):
+                return True
             return following in words["send_words"] + words["draft_words"] + words["stop_words"]
 
         pending = None  # (time, hit): a bare wake word waiting for a fuller command from another language
@@ -1464,11 +1480,27 @@ class Listener:
                 now = time.monotonic()
                 rms = float(np.sqrt(np.mean(np.frombuffer(data, dtype=np.int16).astype(np.float32) ** 2)))
                 self.level = rms
+                if isinstance(mode, tuple) and mode[0] == "shortcut":
+                    reset()
+                    sc = mode[1]
+                    if rms > s["speech_rms"]:
+                        last_sound = now
+                    idle_limit = sc.get("idle_seconds", s.get("dictation_idle_seconds", 4))
+                    if sc.get("idle_close", True) and now - last_sound > idle_limit:
+                        press_hotkey(sc["hotkey"])
+                        ev.add("shortcut", "shortcut_stopped", name=sc["name"], seconds=f"{idle_limit:g}")
+                        mode, last, ignore_until = None, now, now + 2
+                        self._set("listening")
+                        continue
+                    if now - last_check > 180:
+                        mode, last, ignore_until = None, now, now + 2
+                        self._set("listening")
+                        continue
                 if mode == "dictation":
                     reset()
                     if rms > s["speech_rms"]:
                         last_sound = now
-                    if now - last_sound > s["dictation_idle_seconds"]:
+                    if s.get("dictation_idle_close", True) and now - last_sound > s["dictation_idle_seconds"]:
                         button = SEND_DICTATION_BUTTON if self._send else STOP_DICTATION_BUTTON
                         if self._click(button):
                             kind = "sent" if self._send else "inserted"
@@ -1545,6 +1577,9 @@ class Listener:
                     ev.add("shortcut", "shortcut_triggered", name=sc["name"], phrase=phr, hotkey=sc["hotkey"], conf=f"{sc_conf:.2f}")
                     press_hotkey(sc["hotkey"])
                     reset()
+                    if sc.get("idle_close", True):
+                        mode, last_sound, last_check = ("shortcut", sc), now, now
+                        self._set("dictation")
                     continue
                 command = next(filter(is_command, hits), None)
                 if command:
@@ -1559,8 +1594,10 @@ class Listener:
                 words, wake, following, conf = hit
                 if following in words["stop_words"] or now - last <= s["cooldown_seconds"]:
                     continue
-                send = following in words["send_words"]
-                dictate = (send or following in words["draft_words"]) and s["dictation_enabled"]
+                is_dictate_wake = any(wake == dw or wake.split() == dw.split() for dw in words.get("dictate_words", []))
+                is_draft = following in words["draft_words"]
+                send = (following in words["send_words"] or is_dictate_wake) and not is_draft
+                dictate = (send or is_draft or is_dictate_wake) and s["dictation_enabled"]
                 if not dictate and not s["chat_enabled"]:
                     continue
                 last = now
@@ -1571,7 +1608,7 @@ class Listener:
                     start_voice_chat(s, self._click)
                 elif self._click(DICTATE_BUTTON):
                     ev.add("dictation", "wake_dictation" if send else "wake_draft",
-                           phrase=f"{wake}, {following}", conf=f"{conf:.2f}")
+                           phrase=wake if not following else f"{wake}, {following}", conf=f"{conf:.2f}")
                     self._send = send
                     mode, last_sound, last_check = "dictation", now, now
                     self._set("dictation")

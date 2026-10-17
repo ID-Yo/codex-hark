@@ -4,6 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-10-17
+
+### Added
+- **Dedicated Dictation Wake Words**: Direct dictation wake words and phrases (e.g. „запиши“ in BG, "dictate" / "dictation" in EN) allow triggering dictation immediately without speaking the voice chat wake word first.
+- **Auto-Close on Silence for Custom Shortcuts**: Custom wake words and shortcuts (e.g. OpenWhispr) now monitor speech and automatically release/toggle the hotkey again after silence (configurable idle_seconds, default 4s).
+- **Silence Close Control in Dictation**: Added configurable auto-closing on silence (dictation_idle_close and dictation_idle_seconds) to Dictation settings.
+
+### Changed
+- **Moved Sensitivity to Settings Submenu**: "Чувствителност" (Sensitivity) is now an organized submenu of Settings, leaving Codex wake focused purely on Voice Chat and Dictation commands.
+
+### Fixed
+- **Taskbar Window Icon**: Explicitly registered SetCurrentProcessExplicitAppUserModelID ("ID-Yo.CodexHark.App.1") and applied WM_SETICON on the application window so the Hark icon displays accurately in the Windows taskbar and title bar.
+
 ## [0.21.0] - 2026-10-17
 
 ### Changed

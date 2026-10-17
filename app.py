@@ -109,6 +109,40 @@ def make_image(color, size=64):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def set_window_icon(icon_path):
+    # Set the 16x16 and 32x32 window icons via WM_SETICON for the taskbar and title bar
+    if not os.path.exists(icon_path):
+        return
+    user32 = ctypes.windll.user32
+    h_small = user32.LoadImageW(None, icon_path, 1, 16, 16, 0x0010)  # IMAGE_ICON, LR_LOADFROMFILE
+    h_big = user32.LoadImageW(None, icon_path, 1, 32, 32, 0x0010)
+
+    def apply_to_hwnds():
+        for _ in range(50):
+            time.sleep(0.1)
+            hwnds = []
+
+            def enum_cb(h, _):
+                if user32.IsWindowVisible(h):
+                    buf = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(h, buf, 512)
+                    if "Codex Hark" in buf.value:
+                        hwnds.append(h)
+                return True
+
+            WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
+            user32.EnumWindows(WNDENUMPROC(enum_cb), 0)
+            if hwnds:
+                for h in hwnds:
+                    if h_small:
+                        user32.SendMessageW(h, 0x0080, 0, h_small)  # WM_SETICON, ICON_SMALL
+                    if h_big:
+                        user32.SendMessageW(h, 0x0080, 1, h_big)  # WM_SETICON, ICON_BIG
+                break
+
+    threading.Thread(target=apply_to_hwnds, daemon=True).start()
+
+
 def save_icon(path):
     make_app_icon(256).save(path, sizes=[(s, s) for s in (16, 20, 24, 32, 40, 48, 64, 128, 256)])
 
@@ -740,6 +774,8 @@ class App:
             self.window.show()
             self.window.restore()
             ctypes.windll.user32.AllowSetForegroundWindow(-1)
+            icon = os.path.join(ww.DATA_DIR, "icon.ico")
+            set_window_icon(icon)
 
     def set_paused(self, paused):
         if paused == self.paused.is_set():
@@ -879,6 +915,7 @@ class App:
         threading.Thread(target=self.watch_updates, name="updates", daemon=True).start()
         icon = os.path.join(ww.DATA_DIR, "icon.ico")
         save_icon(icon)
+        set_window_icon(icon)
         webview.start(private_mode=True, storage_path=os.path.join(ww.DATA_DIR, "webview"), icon=icon)
 
 
@@ -904,6 +941,10 @@ def migrate_legacy_autostart():
 
 
 def main(argv=None):
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ID-Yo.CodexHark.App.1")
+    except Exception:
+        pass
     parser = argparse.ArgumentParser(prog=ww.APP_NAME)
     parser.add_argument("--autostart", choices=["on", "off"], help="turn start with Windows on or off")
     parser.add_argument("--install", nargs="?", const="", help="install to folder (or default) with Start Menu and Desktop shortcuts and register in Windows")

@@ -47,7 +47,11 @@ class HeardTests(unittest.TestCase):
 
     def test_grammar_has_every_word_of_the_language(self):
         words = json.loads(ww.grammar(EN))
-        self.assertEqual(set(words), {"codex", "write", "draft", "stop", "[unk]", *EN["decoys"]})
+        self.assertEqual(set(words), {"codex", "dictate", "dictation", "write", "draft", "stop", "[unk]", *EN["decoys"]})
+
+    def test_dedicated_dictate_word_triggers_heard(self):
+        self.assertEqual(ww.heard(result(("запиши", 1.0)), BG, 0.5), ("запиши", "", 1.0))
+        self.assertEqual(ww.heard(result(("dictate", 0.95)), EN, 0.5), ("dictate", "", 0.95))
 
 
 class WakePhraseTests(unittest.TestCase):

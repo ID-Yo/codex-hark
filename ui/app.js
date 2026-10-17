@@ -10,7 +10,7 @@ const I18N = {
   bg: {
     title: "Codex Hark", product: "Hark", nav: ["Начало", "Codex wake", "Wake Words", "AI асистент", "Настройки", "Относно"],
     states: { starting: ["Стартира", "Hark стартира…"], listening: ["Слуша", "Слуша за ключовата дума"], chat: ["Гласов чат", "Гласовият чат е отворен"], dictation: ["Диктовка", "Диктовка в текущия чат"], paused: ["Пауза", "Слушането е на пауза"], error: ["Грешка", "Hark има проблем"] },
-    kinds: { chat: "Гласов чат", dictation: "Диктовка", sent: "Изпратено", inserted: "В полето", error: "Грешка", pause: "Пауза", settings: "Настройки" },
+    kinds: { chat: "Гласов чат", dictation: "Диктовка", sent: "Изпратено", inserted: "В полето", error: "Грешка", pause: "Пауза", settings: "Настройки", shortcut: "Шорткът" },
     stateEyebrow: "Състояние", ready: "Готов за „{w}“", onPause: "На пауза", localNote: "Hark работи локално. Аудиото не се записва и не излиза от компютъра.",
     pause: "Пауза", resume: "Продължи", listener: "Hark", last: "Последно: {t} · {e}", noUse: "Още няма задействания днес.",
     hotkey: "Voice chat hotkey {voice}", codexOpen: "Отворен", codexClosed: "Не е отворен", defaultMic: "Микрофон по подразбиране", levelLine: "Ниво {l} · праг {t}",
@@ -25,7 +25,7 @@ const I18N = {
     targetHelp: { new: "Всеки разговор е отделен чат.", thread: "Hark отваря този чат преди разговора, така че всички разговори се събират в него.", project: "Hark отваря нов чат в този проект. Проектът трябва да е доверен в Codex." },
     wakeWords: "Ключови думи", closeAfter: "Секунди тишина",
     closeHelp: "Докато Codex търси или мисли, разговорът не се затваря (до 5 минути).", idleClose: "Затваряй след тишина", stopWords: "Фраза за край: ключова дума + една от тези думи", stopOn: "Фраза за край включена", busy: "Codex работи, разговорът остава отворен", chatStop: "„{w}, {s}“ го затваря веднага.", tryChat: "Пробвай: отвори гласов чат",
-    dict: "Диктовка", dictSub: "Ключова дума + дума за диктовка", dictOn: "Диктовка включена", dictWords: "Думи за диктовка", dictEnd: "Край на диктовката след тишина",
+    dict: "Диктовка", dictSub: "Ключова дума или фраза за диктовка", dictOn: "Диктовка включена", dictWords: "Думи за диктовка", dictateWords: "Ключови думи за диктовка (напр. „запиши“)", dictCloseHelp: "Изпраща текста към Codex след секунди тишина.", scCloseHelp: "Спира записа след определени секунди тишина.", dictEnd: "Край на диктовката след тишина",
     sensitivity: "Чувствителност", sensHelp: "По-висока стойност дава по-малко фалшиви задействания, но трябва да говорите по-ясно.",
     minConf: "Минимална увереност", cooldown: "Пауза след задействане", decoys: "Близки думи ({n})", decoysHelp: "Думи, които звучат подобно и поемат почти-попаденията, за да не се задейства Hark.",
     add: "+ Добави", newWord: "нова дума", remove: "Премахни {w}",
@@ -64,7 +64,7 @@ const I18N = {
   en: {
     title: "Codex Hark", product: "Hark", nav: ["Home", "Codex wake", "Wake Words", "AI Assistant", "Settings", "About"],
     states: { starting: ["Starting", "Hark is starting…"], listening: ["Listening", "Listening for the wake word"], chat: ["Voice chat", "Voice chat is open"], dictation: ["Dictation", "Dictating in the current chat"], paused: ["Paused", "Listening is paused"], error: ["Error", "Hark has a problem"] },
-    kinds: { chat: "Voice chat", dictation: "Dictation", sent: "Sent", inserted: "In the box", error: "Error", pause: "Pause", settings: "Settings" },
+    kinds: { chat: "Voice chat", dictation: "Dictation", sent: "Sent", inserted: "In the box", error: "Error", pause: "Pause", settings: "Settings", shortcut: "Shortcut" },
     stateEyebrow: "Status", ready: "Ready for “{w}”", onPause: "Paused", localNote: "Hark runs on this computer. Audio is never recorded or sent anywhere.",
     pause: "Pause", resume: "Resume", listener: "Hark", last: "Last: {t} · {e}", noUse: "Not used yet today.",
     hotkey: "Voice chat hotkey {voice}", codexOpen: "Open", codexClosed: "Not open", defaultMic: "Default microphone", levelLine: "Level {l} · threshold {t}",
@@ -116,7 +116,7 @@ const I18N = {
     footer: "{s} · Codex {c} · {voice}", footerOpen: "is open", footerClosed: "is not open", version: "Codex Hark v{v}",
   },
 };
-const KIND = { chat: ["s-chat", "chat"], dictation: ["s-dictation", "pen"], sent: ["s-listening", "send"], inserted: ["s-listening", "ok"], error: ["s-error", "warn"], pause: ["", "pause"], settings: ["", "gear"] };
+const KIND = { chat: ["s-chat", "chat"], dictation: ["s-dictation", "pen"], sent: ["s-listening", "send"], inserted: ["s-listening", "ok"], error: ["s-error", "warn"], pause: ["", "pause"], settings: ["", "gear"], shortcut: ["s-listening", "play"] };
 const STATE_CLASS = { starting: "", listening: "s-listening", chat: "s-chat", dictation: "s-dictation", paused: "", error: "s-error" };
 let L = I18N.bg;
 const T = (key, args = {}) => String(L[key]).replace(/\{(\w+)\}/g, (_, k) => args[k] ?? "");
@@ -151,12 +151,12 @@ function fixtureApi() {
   });
   const defaults = {
     chat_enabled: true, dictation_enabled: true, min_conf: 0.5, idle_seconds: 10,
-    dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
+    dictation_idle_close: true, dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
     mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
-    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true, assistant_folder: "", assistant_name: "Hark", assistant_model: "", chat_continue_minutes: 0, shortcuts: [{ id: "openwhispr", name: "OpenWhispr", hotkey: "Ctrl+Shift+Space", enabled: true, words: { en: ["whisper"], bg: ["виспер"] } }],
+    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true, assistant_folder: "", assistant_name: "Hark", assistant_model: "", chat_continue_minutes: 0, shortcuts: [{ id: "openwhispr", name: "OpenWhispr", hotkey: "Ctrl+Shift+Space", idle_close: true, idle_seconds: 4, enabled: true, words: { en: ["whisper"], bg: ["виспер"] } }],
     languages: {
-      en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
-      bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
+      en: { enabled: true, wake_words: ["codex"], dictate_words: ["dictate", "dictation"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
+      bg: { enabled: true, wake_words: ["кодекс", "кодекса"], dictate_words: ["запиши"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
     },
   };
   let settings = { ...clone(defaults), theme: theme || "system", language: lang };
@@ -164,8 +164,8 @@ function fixtureApi() {
   const asstFiles = { "AGENTS.md": "# Personal assistant\n\nRead SOUL.md and MEMORY.md first.\n", "SOUL.md": "# Soul\n\nYour name is Hark.\n", "MEMORY.md": "# Memory\n\n## About the user\n" };
   const limits = { chat_continue_minutes: [0, 240], min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.21.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.21.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.22.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.22.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true, test_hotkey: async () => ({ ok: true }), install_app: async () => { ui.meta.installed = true; return { ok: true, installed: true, text: "Installed" }; }, uninstall_app: async () => { ui.meta.installed = false; return { ok: true, installed: false, text: "Uninstalled" }; },
@@ -225,20 +225,22 @@ function eventRow(e) {
   return '<div class="ev"><time>' + hhmmss(e.time) + '</time><span class="k-' + e.kind + '">' + icon(k[1]) + "</span><span>" + esc(e.text) + "</span><small>" + esc(e.detail) + "</small></div>";
 }
 function range(key, label, step, unit, help = "") {
-  const [lo, hi] = ui.meta.limits[key];
-  const v = ui.draft[key];
-  return '<div class="field"><div class="lab"><label for="r-' + key + '">' + label + '</label><output id="o-' + key + '">' + fmt(v, step) + unit + "</output></div>" +
-    '<input type="range" id="r-' + key + '" data-key="' + key + '" data-unit="' + unit + '" min="' + lo + '" max="' + hi + '" step="' + step + '" value="' + v + '">' +
+  const baseKey = key.includes(".") ? key.split(".").pop() : key;
+  const [lo, hi] = (ui.meta && ui.meta.limits && (ui.meta.limits[baseKey] || ui.meta.limits[key])) || [1, 30];
+  const v = getP(ui.draft, key) ?? 4;
+  const idKey = idOf(key);
+  return '<div class="field"><div class="lab"><label for="r-' + idKey + '">' + label + '</label><output id="o-' + idKey + '">' + fmt(v, step) + unit + "</output></div>" +
+    '<input type="range" id="r-' + idKey + '" data-key="' + key + '" data-unit="' + unit + '" min="' + lo + '" max="' + hi + '" step="' + step + '" value="' + v + '">' +
     (help ? "<small>" + help + "</small>" : "") + err(key) + "</div>";
 }
 const idOf = (path) => path.replace(/\./g, "_");
 function getP(obj, path) { return path.split(".").reduce((o, k) => (o == null ? o : o[k]), obj); }
-function setP(obj, path, value) { const keys = path.split("."); const last = keys.pop(); keys.reduce((o, k) => o[k], obj)[last] = value; }
+function setP(obj, path, value) { const keys = path.split("."); const last = keys.pop(); keys.reduce((o, k) => (o[k] = o[k] ?? {}), obj)[last] = value; }
 // Wake words may be phrases ("hey codex"); every other list holds single words.
 const MAX_PHRASE = 3;
 const normWord = (s) => s.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
 const langOfKey = (key) => key.startsWith("shortcuts.") ? key.split(".")[3] : key.split(".")[1];
-const isWake = (key) => key.endsWith(".wake_words") || key.includes(".words.");
+const isWake = (key) => key.endsWith(".wake_words") || key.endsWith(".dictate_words") || key.includes(".words.");
 let checkTimer = 0, checkSeq = 0;
 function checkLine() {
   const c = ui.check;
@@ -272,7 +274,7 @@ function scheduleCheck(key, value) {
 }
 // Words of the saved lists that the model does not know: the listener silently ignores them.
 async function refreshUnknown(lang = ui.wordsLang) {
-  const lists = ["wake_words", "send_words", "draft_words", "stop_words", "decoys"];
+  const lists = ["wake_words", "dictate_words", "send_words", "draft_words", "stop_words", "decoys"];
   const text = lists.flatMap((k) => getP(ui.saved, "languages." + lang + "." + k) || []).join(" ");
   const r = await api.check_words(lang, text);
   ui.unknown[lang] = r.status === "unknown" ? r.words.filter((x) => !x.known).map((x) => x.word) : [];
@@ -446,6 +448,11 @@ function shortcutsSection() {
         "</div>" +
         (ui.errors["shortcuts." + i + ".hotkey"] ? '<span class="error-text">' + esc(ui.errors["shortcuts." + i + ".hotkey"]) + "</span>" : "") +
         chips(wKey, L.scKeywords) +
+        '<div class="set" style="margin-top:6px;padding:6px 0 0 0">' +
+        '<div><strong>' + L.idleClose + '</strong><small>' + L.scCloseHelp + '</small></div>' +
+        '<label class="switch"><input type="checkbox" data-key="shortcuts.' + i + '.idle_close"' + (sc.idle_close !== false ? " checked" : "") + '><span></span></label>' +
+        '</div>' +
+        (sc.idle_close !== false ? range("shortcuts." + i + ".idle_seconds", L.closeAfter, 1, " s") : "") +
         "</div>";
     }).join("") : '<div class="alert">' + icon("info") + L.noShortcuts + "</div>") +
     "</section>";
@@ -488,7 +495,6 @@ const screens = {
     const navItems = [
       ["chat", L.cmdVoiceChat, "chat"],
       ["dictation", L.cmdDictation, "pen"],
-      ["sensitivity", L.cmdSensitivity, "mic"],
     ];
     const leftNav = '<nav class="settings-nav" aria-label="' + L.cmdTitle + '">' +
       navItems.map(([id, title, ic]) =>
@@ -510,15 +516,12 @@ const screens = {
     } else if (tab === "dictation") {
       rightContent = '<section class="card">' +
         '<div class="head"><div class="head-title"><span class="mark dict">' + icon("pen") + '</span><div><h2>' + L.dict + '</h2><small>' + L.dictSub + '</small></div></div>' + toggle("dictation_enabled", L.dictOn) + '</div>' +
-        chips(w + "send_words", L.sendWords) + chips(w + "draft_words", L.draftWords) + range("dictation_idle_seconds", L.dictEnd, 1, " s") +
+        chips(w + "dictate_words", L.dictateWords) +
+        chips(w + "send_words", L.sendWords) +
+        chips(w + "draft_words", L.draftWords) +
+        '<div class="set"><div><strong>' + L.idleClose + '</strong><small>' + L.dictCloseHelp + '</small></div>' + toggle("dictation_idle_close", L.idleClose) + '</div>' +
+        (ui.draft.dictation_idle_close !== false ? range("dictation_idle_seconds", L.dictEnd, 1, " s") : "") +
         '</section>';
-    } else if (tab === "sensitivity") {
-      rightContent = '<section class="card">' +
-        '<div><h2>' + L.sensitivity + '</h2><small>' + L.sensHelp + '</small></div>' +
-        range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
-        "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details>" +
-        '</section>';
-
     }
 
     return saveBar() +
@@ -562,6 +565,7 @@ const screens = {
     const tab = ui.settingsTab || "general";
     const navItems = [
       ["general", L.setGeneral, "gear"],
+      ["sensitivity", L.cmdSensitivity, "spark"],
       ["languages", L.setLanguages, "chat"],
       ["mic", L.setMic, "mic"],
       ["activity", L.actEyebrow, "list"],
@@ -583,6 +587,16 @@ const screens = {
         '<div class="set"><div><strong>' + L.beep + '</strong><small>' + L.beepHelp + '</small></div>' + toggle("beep", L.beep) + '</div>' +
         '<div class="set"><div><strong>' + L.theme + '</strong></div>' + seg("theme", [["light", L.themes[0]], ["dark", L.themes[1]], ["system", L.themes[2]]]) + '</div>' +
         '<div class="set"><div><strong>' + L.keysTitle + '</strong><small>' + esc(ui.keysNote || L.keysHelp) + '</small></div><button class="btn btn-small" data-action="check-keys">' + L.keysCheck + '</button></div>' +
+        '</section>';
+    } else if (tab === "sensitivity") {
+      const sLang = (ui.wordsLang && ui.draft.languages[ui.wordsLang]) ? ui.wordsLang : Object.keys(ui.draft.languages)[0] || "en";
+      const sw = "languages." + sLang + ".";
+      const decoysList = getP(ui.draft, sw + "decoys") || [];
+      rightContent = '<section class="card">' +
+        '<div><h2>' + L.sensitivity + '</h2><small>' + L.sensHelp + '</small></div>' +
+        range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
+        '<div class="steps" style="margin-top:6px"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === sLang) + '">' + L.langNames[c] + '</button>').join("") + '</div></div>' +
+        "<details" + (ui.errors[sw + "decoys"] || ui.adding === sw + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: decoysList.length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(sw + "decoys", "") + "</details>" +
         '</section>';
     } else if (tab === "languages") {
       rightContent = languagesCard();
@@ -935,8 +949,9 @@ document.addEventListener("input", (ev) => {
   if (t.dataset?.add) { scheduleCheck(t.dataset.add, t.value); return; }
   if (t.type === "range") {
     const key = t.dataset.key, v = Number(t.value);
-    ui.draft[key] = v; delete ui.errors[key]; ui.notice = null;
-    $("#o-" + key).textContent = fmt(v, Number(t.step)) + t.dataset.unit;
+    setP(ui.draft, key, v); delete ui.errors[key]; ui.notice = null;
+    const out = document.getElementById("o-" + idOf(key)) || document.getElementById("o-" + key);
+    if (out) out.textContent = fmt(v, Number(t.step)) + t.dataset.unit;
     if (key === "speech_rms" && $("#thr-mark")) $("#thr-mark").style.left = meterWidth(v) + "%";
     updateSaveBar();
   }
