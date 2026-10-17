@@ -4,6 +4,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-10-17
+
+### Added
+- **Dictation as Standalone Wake Word**: Dictation is now configured directly as a standalone wake word with primary wake words, phrase support, and activation shortcut (Alt+X) shown prominently in the card header.
+- **Activation Shortcuts in Headers**: Both Voice Chat and Dictation now display their activation key combination in their headers (e.g. "Presses Alt+Z in Codex" / "Presses Alt+X in Codex") and on the home status card.
+- **Trash Can Icon for Deleting Custom Shortcuts**: In Wake Words, the delete button for custom shortcuts now displays a clear trash can icon (#trash).
+- **Test Dictation Button**: Added a "Try it: start dictation" button in the Dictation card to trigger dictation directly from the UI.
+
+### Fixed
+- **Close After Silence Label**: Corrected missing English label under "Close after silence" in Dictation.
+
 ## [0.22.0] - 2026-10-17
 
 ### Added

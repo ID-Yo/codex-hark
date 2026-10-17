@@ -476,6 +476,11 @@ class Api:
         ww.start_voice_chat(self._app.settings, ww.click_codex_button)
         return True
 
+    def test_dictation(self):
+        if not ww.click_codex_button(ww.DICTATE_BUTTON):
+            ww.press_hotkey(ww.codex_hotkeys()["dictation"])
+        return True
+
     def measure(self, seconds):
         """Microphone levels over the next seconds; the window turns two of these into a threshold."""
         listener = self._app.listener
