@@ -8,7 +8,7 @@ const icon = (id) => '<svg class="icon" aria-hidden="true"><use href="#' + id + 
 
 const I18N = {
   bg: {
-    title: "Codex Hark", product: "Hark", nav: ["Начало", "Гласови команди", "AI асистент", "Дневник", "Настройки", "Относно"],
+    title: "Codex Hark", product: "Hark", nav: ["Начало", "Codex wake", "Wake Words", "AI асистент", "Настройки", "Относно"],
     states: { starting: ["Стартира", "Hark стартира…"], listening: ["Слуша", "Слуша за ключовата дума"], chat: ["Гласов чат", "Гласовият чат е отворен"], dictation: ["Диктовка", "Диктовка в текущия чат"], paused: ["Пауза", "Слушането е на пауза"], error: ["Грешка", "Hark има проблем"] },
     kinds: { chat: "Гласов чат", dictation: "Диктовка", sent: "Изпратено", inserted: "В полето", error: "Грешка", pause: "Пауза", settings: "Настройки" },
     stateEyebrow: "Състояние", ready: "Готов за „{w}“", onPause: "На пауза", localNote: "Hark работи локално. Аудиото не се записва и не излиза от компютъра.",
@@ -20,7 +20,7 @@ const I18N = {
     modelReady: "Готов", modelMissing: "Не е изтеглен", modelDownloading: "Изтегля се {p}%", modelError: "Неуспешно изтегляне", download: "Изтегли", wordsFor: "Думи за",
     sendWords: "Пиши и изпрати", draftWords: "Чернова: текстът остава в полето", 
     recent: "Последни", events: "Събития", allLog: "Целият дневник →", noEvents: "Още няма събития.",
-    cmdEyebrow: "Гласови команди", cmdTitle: "Какво чува и какво прави", cmdNote: "Промените действат веднага след „Запази“.",
+    cmdEyebrow: "Codex wake", cmdTitle: "Codex wake", wwEyebrow: "Wake Words", wwTitle: "Ключови думи и шорткъти", wwNote: "Стартирайте програми с гласови команди и персонализирани клавишни комбинации.", cmdNote: "Промените действат веднага след „Запази“.",
     chat: "Гласов чат", chatSub: "Натиска {voice} в Codex", chatOn: "Гласов чат включен", chatGoes: "Разговорите отиват в", asstEyebrow: "AI асистент", asstTitle: "Личен асистент с памет", asstNote: "Асистентът живее в своя папка-проект в Codex. Чете SOUL.md и MEMORY.md в началото на всеки разговор и записва важното в MEMORY.md.", asstOn: "Включи асистента", asstOnHelp: "Прави папка „Hark Assistant“ в Документи с AGENTS.md, SOUL.md и MEMORY.md, добавя я като проект в Codex и праща гласовите разговори там. Codex може веднъж да попита дали вярвате на папката.", asstWorking: "Създава папката и проекта…", asstReady: "Готово: разговорите отиват в {f}", asstNoProject: "Папката {f} е готова и разговорите отиват там, но Codex още не я показва като проект.", asstName: "Име", asstModel: "Модел", asstModelDefault: "По подразбиране в Codex", asstModelHelp: "Записва се в .codex/config.toml на папката. Гласовата част на Codex ползва свой модел; този е за агента, който върши работата.", asstContinue: "Продължи последния чат, ако е бил преди по-малко от", asstContinueHelp: "0 = всеки разговор е нов чат. Иначе гласовият разговор продължава в последния чат на асистента, ако е бил използван в този срок.", asstFolder: "Папка", asstChoose: "Избери…", asstMove: "Премести…", asstMoveHelp: "В новата папка се създават липсващите файлове, а старата остава както е.", asstOpen: "Отвори папката", asstProject: "Проект в Codex", asstProjectNo: "още не е проект", asstElsewhere: "Гласовите разговори сега отиват другаде.", asstSendHere: "Прати разговорите тук", asstFiles: "Файлове", asstSaveFile: "Запази файла", asstReload: "Презареди", asstFileSaved: "{f} е записан.", asstFileUnsaved: "Има незаписани промени в {f}.", targets: ["Нов чат", "Един чат", "Един проект"], chatPick: "Избери чат", projectPick: "Избери проект", noTargets: "Codex още няма чатове или проекти.",
     targetHelp: { new: "Всеки разговор е отделен чат.", thread: "Hark отваря този чат преди разговора, така че всички разговори се събират в него.", project: "Hark отваря нов чат в този проект. Проектът трябва да е доверен в Codex." },
     wakeWords: "Ключови думи", closeAfter: "Секунди тишина",
@@ -62,7 +62,7 @@ const I18N = {
     footer: "{s} · Codex {c} · {voice}", footerOpen: "е отворен", footerClosed: "не е отворен", version: "Codex Hark v{v}",
   },
   en: {
-    title: "Codex Hark", product: "Hark", nav: ["Home", "Voice commands", "AI Assistant", "Activity", "Settings", "About"],
+    title: "Codex Hark", product: "Hark", nav: ["Home", "Codex wake", "Wake Words", "AI Assistant", "Settings", "About"],
     states: { starting: ["Starting", "Hark is starting…"], listening: ["Listening", "Listening for the wake word"], chat: ["Voice chat", "Voice chat is open"], dictation: ["Dictation", "Dictating in the current chat"], paused: ["Paused", "Listening is paused"], error: ["Error", "Hark has a problem"] },
     kinds: { chat: "Voice chat", dictation: "Dictation", sent: "Sent", inserted: "In the box", error: "Error", pause: "Pause", settings: "Settings" },
     stateEyebrow: "Status", ready: "Ready for “{w}”", onPause: "Paused", localNote: "Hark runs on this computer. Audio is never recorded or sent anywhere.",
@@ -74,7 +74,7 @@ const I18N = {
     modelReady: "Ready", modelMissing: "Not downloaded", modelDownloading: "Downloading {p}%", modelError: "Download failed", download: "Download", wordsFor: "Words for",
     sendWords: "Write and send", draftWords: "Draft: text stays in the box", 
     recent: "Recent", events: "Events", allLog: "Full activity →", noEvents: "No events yet.",
-    cmdEyebrow: "Voice commands", cmdTitle: "What it hears and what it does", cmdNote: "Changes take effect as soon as you save.",
+    cmdEyebrow: "Codex wake", cmdTitle: "Codex wake", wwEyebrow: "Wake Words", wwTitle: "Wake Words & Shortcuts", wwNote: "Launch applications with voice commands and custom key combinations.", cmdNote: "Changes take effect as soon as you save.",
     chat: "Voice chat", chatSub: "Presses {voice} in Codex", chatOn: "Voice chat on", chatGoes: "Conversations go to", asstEyebrow: "AI Assistant", asstTitle: "A personal assistant with memory", asstNote: "The assistant lives in its own project folder in Codex. It reads SOUL.md and MEMORY.md at the start of every conversation and notes what matters in MEMORY.md.", asstOn: "Turn the assistant on", asstOnHelp: "Makes a “Hark Assistant” folder in Documents with AGENTS.md, SOUL.md and MEMORY.md, adds it to Codex as a project and sends voice chats there. Codex may ask once whether you trust the folder.", asstWorking: "Creating the folder and project…", asstReady: "Done: conversations go to {f}", asstNoProject: "The folder {f} is ready and conversations go there, but Codex does not list it as a project yet.", asstName: "Name", asstModel: "Model", asstModelDefault: "Codex default", asstModelHelp: "Saved in the folder’s .codex/config.toml. The voice part of Codex uses its own model; this one is for the agent that does the work.", asstContinue: "Continue the last chat if it was less than", asstContinueHelp: "0 = every conversation is a new chat. Otherwise the voice chat continues in the assistant’s last chat if it was used within this time.", asstFolder: "Folder", asstChoose: "Choose…", asstMove: "Move…", asstMoveHelp: "Missing files are created in the new folder; the old one is left as it is.", asstOpen: "Open folder", asstProject: "Project in Codex", asstProjectNo: "not a project yet", asstElsewhere: "Voice chats go somewhere else right now.", asstSendHere: "Send conversations here", asstFiles: "Files", asstSaveFile: "Save file", asstReload: "Reload", asstFileSaved: "{f} is saved.", asstFileUnsaved: "{f} has unsaved changes.", targets: ["New chat", "One chat", "One project"], chatPick: "Choose a chat", projectPick: "Choose a project", noTargets: "Codex has no chats or projects yet.",
     targetHelp: { new: "Every conversation is a separate chat.", thread: "Hark opens this chat before the conversation, so all conversations collect in it.", project: "Hark opens a new chat in this project. The project must be trusted in Codex." },
     wakeWords: "Wake words", closeAfter: "Seconds of silence",
@@ -164,8 +164,8 @@ function fixtureApi() {
   const asstFiles = { "AGENTS.md": "# Personal assistant\n\nRead SOUL.md and MEMORY.md first.\n", "SOUL.md": "# Soul\n\nYour name is Hark.\n", "MEMORY.md": "# Memory\n\n## About the user\n" };
   const limits = { chat_continue_minutes: [0, 240], min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.20.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.20.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.21.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.21.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
     set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true, test_hotkey: async () => ({ ok: true }), install_app: async () => { ui.meta.installed = true; return { ok: true, installed: true, text: "Installed" }; }, uninstall_app: async () => { ui.meta.installed = false; return { ok: true, installed: false, text: "Uninstalled" }; },
@@ -173,7 +173,7 @@ function fixtureApi() {
     create_assistant: async (f) => { const folder = f || asstFolder; asstFolder = folder; settings = { ...settings, chat_target: "project", chat_project: folder, assistant_folder: folder, chat_continue_minutes: settings.chat_continue_minutes || 30 }; asstReady = true; return { ok: true, folder: settings.assistant_folder, project: true, settings }; },
     assistant_info: async () => ({ folder: asstFolder, ready: asstReady, project: asstReady, models: [{ slug: "gpt-6-astra", name: "GPT-6-Astra" }, { slug: "gpt-6.1-sol", name: "GPT-6.1-Sol" }], files: asstReady ? { ...asstFiles } : {} }),
     save_assistant_file: async (f, t) => { asstFiles[f] = t; return { ok: true }; }, open_assistant_folder: async () => true,
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.21.0 — you have 0.20.0", version: "0.21.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.21.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.22.0 — you have 0.21.0", version: "0.22.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.22.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -471,8 +471,15 @@ const screens = {
       (s.chat_enabled ? phrase("chat", "chat", null, s.idle_close ? T("chatHelp", { s: s.idle_seconds }) : "") : "") +
       (s.dictation_enabled ? phrase("dict", "pen", "send_words", T("dictHelp", { s: s.dictation_idle_seconds })) + phrase("dict", "pen", "draft_words", L.draftHelp) : "") +
       (s.chat_enabled && s.stop_enabled ? phrase("chat", "pause", "stop_words", L.stopHelp) : "") +
-      '</section></div><section class="card"><div class="head"><div><div class="eyebrow">' + L.recent + "</div><h2>" + L.events + '</h2></div><button class="text-button" data-go="activity">' + L.allLog + "</button></div>" +
+      '</section></div><section class="card"><div class="head"><div><div class="eyebrow">' + L.recent + "</div><h2>" + L.events + '</h2></div><button class="text-button" data-screen="settings" data-tab-switch="activity">' + L.allLog + "</button></div>" +
       '<div class="ev-list">' + (recent.length ? recent.map(eventRow).join("") : '<div class="empty">' + L.noEvents + "</div>") + "</div></section>";
+  },
+  shortcuts() {
+    const lang = ui.wordsLang;
+    return saveBar() +
+      '<div class="intro"><div><div class="eyebrow">' + L.wwEyebrow + '</div><h1>' + L.wwTitle + '</h1><small>' + L.wwNote + '</small></div></div>' +
+      '<div class="steps"><span class="label">' + L.wordsFor + '</span><div class="seg" role="group">' + Object.keys(ui.draft.languages).map((c) => '<button data-words-lang="' + c + '" aria-pressed="' + (c === lang) + '">' + L.langNames[c] + '</button>').join("") + '</div></div>' +
+      shortcutsSection();
   },
   commands() {
     const lang = ui.wordsLang;
@@ -482,7 +489,6 @@ const screens = {
       ["chat", L.cmdVoiceChat, "chat"],
       ["dictation", L.cmdDictation, "pen"],
       ["sensitivity", L.cmdSensitivity, "mic"],
-      ["shortcuts", L.cmdShortcuts, "play"],
     ];
     const leftNav = '<nav class="settings-nav" aria-label="' + L.cmdTitle + '">' +
       navItems.map(([id, title, ic]) =>
@@ -512,8 +518,7 @@ const screens = {
         range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
         "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details>" +
         '</section>';
-    } else if (tab === "shortcuts") {
-      rightContent = shortcutsSection();
+
     }
 
     return saveBar() +
@@ -559,6 +564,7 @@ const screens = {
       ["general", L.setGeneral, "gear"],
       ["languages", L.setLanguages, "chat"],
       ["mic", L.setMic, "mic"],
+      ["activity", L.actEyebrow, "list"],
       ["windows", L.setWindows, "folder"],
       ["updates", L.setUpdates, "play"],
     ];
@@ -601,6 +607,19 @@ const screens = {
         '</div>' +
         (ui.notice ? '<div class="alert ' + ui.notice[0] + '" style="margin-top:10px">' + esc(ui.notice[1]) + '</div>' : '') +
         '</section>';
+    } else if (tab === "activity") {
+      const kinds = FILTERS[ui.filter];
+      const q = ui.query.toLowerCase();
+      const rows = ui.events.filter((e) => (!kinds || kinds.includes(e.kind)) && (!q || (e.text + " " + e.detail).toLowerCase().includes(q))).reverse();
+      rightContent = '<section class="card table-card" style="gap:10px">' +
+        '<div class="head"><div><h2>' + L.actTitle + '</h2><small>' + L.actNote + '</small></div>' +
+        '<div class="steps"><button class="btn btn-small" data-action="folder">' + icon("folder") + L.logFolder + '</button><button class="btn btn-small" data-action="copy">' + icon("copy") + L.copy + '</button></div></div>' +
+        (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + '</div>' : '') +
+        '<div class="filters"><label class="search">' + icon("search") + '<input id="query" placeholder="' + L.search + '" value="' + esc(ui.query) + '" aria-label="' + L.search + '"></label>' +
+        '<div class="seg" role="group">' + Object.keys(FILTERS).map((v, i) => '<button data-filter="' + v + '" aria-pressed="' + (ui.filter === v) + '">' + L.filters[i] + '</button>').join("") + '</div></div>' +
+        '<div style="flex:1;overflow:auto;min-height:220px;border:1px solid var(--border);border-radius:8px"><table><thead><tr><th>' + L.time + '</th><th>' + L.event + '</th><th>' + L.details + '</th></tr></thead><tbody>' +
+        (rows.length ? rows.map((e) => '<tr><td class="t">' + dateTime(e.time) + '</td><td><span class="pill ' + (KIND[e.kind]?.[0] || "") + '"><span class="dot"></span>' + (L.kinds[e.kind] || e.kind) + '</span> ' + esc(e.text) + '</td><td class="d">' + esc(e.detail) + '</td></tr>').join("") : '<tr><td colspan="3" class="empty">' + L.none + '</td></tr>') +
+        '</tbody></table></div></section>';
     } else if (tab === "updates") {
       rightContent = '<section class="card" style="gap:0">' +
         '<div><h2>' + L.updTitle + '</h2><small>' + L.updHelp + '</small></div>' +
@@ -723,7 +742,7 @@ async function poll() {
     } else if (live.events.length) {
       ui.events.push(...live.events);
       ui.events = ui.events.slice(-1000);
-      if (ui.screen === "home" || (ui.screen === "activity" && document.activeElement?.id !== "query")) render();
+      if (ui.screen === "home" || (ui.screen === "settings" && ui.settingsTab === "activity" && document.activeElement?.id !== "query")) render();
     } else if (changed && ui.screen === "home") render();
     if (ui.events.length) ui.lastId = ui.events[ui.events.length - 1].id;
     if (["commands", "settings"].includes(ui.screen) || (ui.models || []).some((m) => m.state === "downloading")) {
@@ -785,7 +804,7 @@ document.addEventListener("click", async (ev) => {
   const t = ev.target.closest("button, [data-go]");
   if (!t) return;
   const d = t.dataset;
-  if (d.screen || d.go) { ui.screen = d.screen || d.go; ui.notice = null; ui.adding = null; render(true); if (ui.screen === "commands") { refreshUnknown(); refreshTargets(); }
+  if (d.screen || d.go) { ui.screen = d.screen || d.go; if (d.tabSwitch) ui.settingsTab = d.tabSwitch; ui.notice = null; ui.adding = null; render(true); if (ui.screen === "commands" || ui.screen === "shortcuts") { refreshUnknown(); refreshTargets(); }
     if (ui.screen === "assistant") loadAssistant();
     if (ui.screen === "settings" && api.last_update && !ui.updChecking) api.last_update().then((u) => { if (u && ui.screen === "settings") { ui.update = u; render(); } });
     return; }

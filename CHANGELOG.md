@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-10-17
+
+### Changed
+- **Navigation & Screen Organization**:
+  - Renamed "Voice commands" to **Codex wake**.
+  - Added dedicated top-level **Wake Words** tab containing custom shortcuts and external application triggers.
+  - Moved **Activity (Дневник)** into a sub-item of the **Settings** sidebar.
+
 ## [0.20.0] - 2026-10-17
 
 ### Added
