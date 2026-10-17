@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions follow [SemVer
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-17
+
+### Added
+- **Custom shortcuts & commands**: trigger any application (such as OpenWhispr) with voice commands or key combinations. Add unlimited custom commands with name, hotkey (e.g. `Ctrl+Shift+Space`, `Alt+F12`), per-language wake keywords, enable switch, and test button. OpenWhispr is pre-configured by default.
+- **Expanded hotkey support**: `parse_hotkey` and `press_hotkey` now support special keys (`Space`, `Enter`, `Tab`, `Escape`, `Delete`, `Insert`, `Home`, `End`, arrows, etc.) alongside alphanumeric and function keys.
+- **Application installation**: install Hark as a desktop app with Start Menu and Desktop shortcuts and Windows Add/Remove Programs integration. Includes `CodexHark.exe --install` and `--uninstall` command line flags and a one-click button in Settings.
+
 ## [0.16.0] - 2026-10-09
 
 ### Added

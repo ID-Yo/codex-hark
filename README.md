@@ -18,6 +18,8 @@ Codex Desktop starts a voice chat with a hotkey (`Alt+Z`) but has no wake word, 
 | "Codex, write" („Кодекс, пиши“) | Dictates into the current chat; after 4 s of silence the text is sent to the agent |
 | "Codex, draft" („Кодекс, чернова“) | Dictates; the text stays in the input box for review |
 | "Codex, stop" („Кодекс, стоп“) | Closes the voice chat at once |
+| "Whisper" (with Bulgarian added: „Виспер“) | Triggers OpenWhispr dictation (`Ctrl+Shift+Space` by default) |
+| Custom shortcuts | Add unlimited custom voice shortcuts to trigger any app or key combo in **Voice commands** |
 
 ## Install
 
@@ -31,7 +33,9 @@ Codex Desktop starts a voice chat with a hotkey (`Alt+Z`) but has no wake word, 
 3. Put the file anywhere (there is no installer) and run it. The app is not signed, so Windows SmartScreen may show "Windows protected your PC" on first run: choose **More info > Run anyway**.
 4. The window opens and a blue microphone icon appears in the system tray. Turn on **Start with Windows** in Settings if you want it permanent.
 
-Requirements: Windows 10 or 11 (64-bit) with the WebView2 Runtime (included in Windows 11) and the Codex Desktop app. Hark checks the Codex shortcuts for voice chat and dictation on its first start (see [Codex shortcuts](#codex-shortcuts)).
+Requirements: Windows 10 or 11 (64-bit) with the WebView2 Runtime (included in Windows 11) and the Codex Desktop app.
+
+You can install Hark as a desktop application with Start Menu and Desktop shortcuts via **Settings > Windows > Install as application** or by running `CodexHark.exe --install`. Hark checks the Codex shortcuts for voice chat and dictation on its first start (see [Codex shortcuts](#codex-shortcuts)).
 
 ## Use
 

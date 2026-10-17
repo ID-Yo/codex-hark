@@ -634,5 +634,46 @@ class AddedLanguageTests(unittest.TestCase):
             self.assertEqual(errors, {}, code)
 
 
+class CustomShortcutsTests(unittest.TestCase):
+    def test_parse_hotkey_supports_special_keys(self):
+        self.assertEqual(ww.parse_hotkey("Ctrl+Shift+Space"), [0x11, 0x10, 0x20])
+        self.assertEqual(ww.parse_hotkey("Ctrl+Alt+Space"), [0x11, 0x12, 0x20])
+        self.assertEqual(ww.parse_hotkey("Alt+Space"), [0x12, 0x20])
+        self.assertEqual(ww.parse_hotkey("Ctrl+Escape"), [0x11, 0x1B])
+        self.assertIsNone(ww.parse_hotkey("Ctrl+InvalidKey"))
+
+    def test_shortcuts_default_and_validation(self):
+        self.assertIn("shortcuts", ww.DEFAULTS)
+        sc = ww.DEFAULTS["shortcuts"][0]
+        self.assertEqual(sc["id"], "openwhispr")
+        self.assertEqual(sc["hotkey"], "Ctrl+Shift+Space")
+        raw = {"shortcuts": [{"id": "test", "name": "Test", "hotkey": "Ctrl+Shift+Space", "enabled": True, "words": {"en": ["whisper"]}}]}
+        s, err = ww.validate_settings(raw)
+        self.assertEqual(err, {})
+        self.assertEqual(len(s["shortcuts"]), 1)
+        raw_bad = {"shortcuts": [{"id": "bad", "name": "Bad", "hotkey": "Unknown+Key", "enabled": True}]}
+        s_bad, err_bad = ww.validate_settings(raw_bad)
+        self.assertIn("shortcuts.0.hotkey", err_bad)
+
+    def test_grammar_and_heard_shortcut(self):
+        scs = [{"id": "sc1", "name": "OpenWhispr", "hotkey": "Ctrl+Shift+Space", "enabled": True, "words": {"en": ["open whisper", "whisper"]}}]
+        g = json.loads(ww.grammar(EN, shortcuts=scs, lang="en"))
+        self.assertIn("open", g)
+        self.assertIn("whisper", g)
+        res = json.dumps({"result": [{"conf": 0.9, "word": "open"}, {"conf": 0.8, "word": "whisper"}]})
+        matched, phr, conf = ww.heard_shortcut(res, scs, "en", 0.5)
+        self.assertIsNotNone(matched)
+        self.assertEqual(matched["id"], "sc1")
+        self.assertEqual(phr, "open whisper")
+        self.assertAlmostEqual(conf, 0.85)
+
+
+class AppInstallationTests(unittest.TestCase):
+    def test_install_paths_exist(self):
+        import app
+        start_menu, desktop = app.get_install_paths()
+        self.assertTrue(start_menu.endswith("Codex Hark.lnk"))
+        self.assertTrue(desktop.endswith("Codex Hark.lnk"))
+
 if __name__ == "__main__":
     unittest.main()

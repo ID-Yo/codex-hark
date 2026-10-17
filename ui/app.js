@@ -32,6 +32,13 @@ const I18N = {
     aboutTitle: "За приложението", aboutText: "Hark слуша на вашия компютър за ключова дума и управлява Codex Desktop с глас: отваря гласов чат и диктува. Разпознаването е локално, аудиото не се записва и не излиза навън.", aboutAuthor: "Автор: Иван Йосифов", aboutDonate: "Подкрепете проекта:",
     aboutLegal: "Лиценз MIT. Неофициален проект, не е свързан с OpenAI; „Codex“ е име на продукт на OpenAI.",
     keysTitle: "Shortcut-и на Codex", keysHelp: "Hark ги ползва, за да отвори гласов чат и диктовка. Проверката ги добавя, ако липсват.", keysCheck: "Провери", updTitle: "Нови версии", updHelp: "Проверява публичното репо в GitHub след стартиране и на всеки 12 часа.", updCheck: "Провери сега", updAuto: "Автоматична проверка", updGet: "Изтегли {v}", updChecking: "Проверява…", updInstall: "Обнови сега", updInstalling: "Изтегля и проверява новата версия…", updAutoInstall: "Инсталирай обновленията автоматично", updAutoInstallHelp: "Тегли новата версия, проверява SHA256 и рестартира Hark, когато няма отворен разговор.",
+        shortcutsTitle: "Персонализирани шорткъти", shortcutsSub: "Стартирайте всяко приложение (като OpenWhispr) с гласова команда или клавиш.",
+    addShortcut: "Добави шорткът", scNamePlaceholder: "Име (напр. OpenWhispr)", scHotkeyPlaceholder: "Шорткът (напр. Ctrl+Shift+Space)",
+    scKeywords: "Ключови думи за задействане", scTry: "Пробвай шорткъта", scDelete: "Премахни шорткъта", scToggle: "Включи / Изключи",
+    noShortcuts: "Няма добавени персонализирани шорткъти.", appInstall: "Инсталиране на приложението",
+    appInstallHelp: "Създава преки пътища в Start Menu и на работния плот с икона и регистрира Hark в Windows.",
+    appInstalled: "Инсталирано в Start Menu и на работния плот", appNotInstalled: "Не са създадени преки пътища",
+    installNow: "Инсталирай като приложение", uninstallApp: "Премахни от Start Menu и Desktop",
     windowsTitle: "Windows", windowsHelp: "Стартиране, папка с данни и настройки по подразбиране.",
     addLang: "Добави език", removeLang: "Премахни", addLangHelp: "Моделът се изтегля след „Запази“.",
     checking: "Проверка…", wordOk: "Моделът познава: {w}", noModel: "Моделът за този език още не е изтеглен — думите не могат да се проверят.",
@@ -79,6 +86,13 @@ const I18N = {
     aboutTitle: "About", aboutText: "Hark listens on your computer for a wake word and controls Codex Desktop by voice: it opens voice chat and dictates. Recognition is local; audio is never recorded or sent anywhere.", aboutAuthor: "Author: Ivan Yosifov", aboutDonate: "Support the project:",
     aboutLegal: "MIT License. Unofficial project, not affiliated with OpenAI; “Codex” is the name of an OpenAI product.",
     keysTitle: "Codex shortcuts", keysHelp: "Hark needs them to open voice chat and dictation. The check adds them if they are missing.", keysCheck: "Check", updTitle: "New versions", updHelp: "Checks the public GitHub repository after start and every 12 hours.", updCheck: "Check now", updAuto: "Automatic check", updGet: "Download {v}", updChecking: "Checking…", updInstall: "Update now", updInstalling: "Downloading and checking the new version…", updAutoInstall: "Install updates automatically", updAutoInstallHelp: "Downloads the new version, checks its SHA256 and restarts Hark when no conversation is open.",
+        shortcutsTitle: "Custom shortcuts", shortcutsSub: "Trigger any app (like OpenWhispr) with a voice command or key combo.",
+    addShortcut: "Add shortcut", scNamePlaceholder: "Name (e.g. OpenWhispr)", scHotkeyPlaceholder: "Shortcut (e.g. Ctrl+Shift+Space)",
+    scKeywords: "Trigger keywords / phrases", scTry: "Test shortcut", scDelete: "Delete shortcut", scToggle: "Enable / Disable",
+    noShortcuts: "No custom shortcuts added yet.", appInstall: "Application installation",
+    appInstallHelp: "Creates Start Menu and Desktop shortcuts with an icon and registers Hark in Windows.",
+    appInstalled: "Installed in Start Menu and Desktop", appNotInstalled: "Shortcuts not created yet",
+    installNow: "Install as application", uninstallApp: "Remove from Start Menu & Desktop",
     windowsTitle: "Windows", windowsHelp: "Start-up, data folder and default settings.",
     addLang: "Add language", removeLang: "Remove", addLangHelp: "The model is downloaded after you save.",
     checking: "Checking…", wordOk: "The model knows: {w}", noModel: "The model for this language is not downloaded yet, so the words cannot be checked.",
@@ -139,7 +153,7 @@ function fixtureApi() {
     chat_enabled: true, dictation_enabled: true, min_conf: 0.5, idle_seconds: 10,
     dictation_idle_seconds: 4, speech_rms: 200, codex_audio_peak: 0.01, cooldown_seconds: 8,
     mic_device: "", beep: false, notifications: true, theme: "system", language: "auto", stop_enabled: true, idle_close: true,
-    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true, assistant_folder: "", assistant_name: "Hark", assistant_model: "", chat_continue_minutes: 0,
+    chat_target: "new", chat_thread: "", chat_project: "", update_check: true, update_install: true, assistant_folder: "", assistant_name: "Hark", assistant_model: "", chat_continue_minutes: 0, shortcuts: [{ id: "openwhispr", name: "OpenWhispr", hotkey: "Ctrl+Shift+Space", enabled: true, words: { en: ["whisper"], bg: ["виспер"] } }],
     languages: {
       en: { enabled: true, wake_words: ["codex"], send_words: ["write"], draft_words: ["draft"], stop_words: ["stop"], decoys: ["code", "codes", "coding", "text", "alexa", "context", "craft"] },
       bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "кода", "коды", "коде", "тест", "текст", "индекс", "кейс", "алекса"] },
@@ -150,16 +164,16 @@ function fixtureApi() {
   const asstFiles = { "AGENTS.md": "# Personal assistant\n\nRead SOUL.md and MEMORY.md first.\n", "SOUL.md": "# Soul\n\nYour name is Hark.\n", "MEMORY.md": "# Memory\n\n## About the user\n" };
   const limits = { chat_continue_minutes: [0, 240], min_conf: [0.2, 0.95], idle_seconds: [3, 120], dictation_idle_seconds: [1, 30], speech_rms: [20, 5000], codex_audio_peak: [0.001, 0.5], cooldown_seconds: [1, 60] };
   return {
-    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.16.0", events: events.filter((e) => e.id > after) }),
-    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, version: "0.16.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
+    state: async (after) => ({ state: location.hash.includes("busy") ? "chat" : "listening", busy: location.hash.includes("busy"), paused: false, codex_open: true, level: 520, lang, threshold: settings.speech_rms, version: "0.17.0", events: events.filter((e) => e.id > after) }),
+    get_settings: async () => ({ settings, defaults, limits, devices: ["Microphone Array (Realtek(R) Au", "Headset (Jabra Evolve2 65)"], autostart: true, installed: true, version: "0.17.0", lang, added_languages: { bg: { enabled: true, wake_words: ["кодекс", "кодекса"], send_words: ["пиши"], draft_words: ["чернова"], stop_words: ["стоп", "край"], decoys: ["код", "тест"] }, de: { enabled: true, wake_words: ["codex", "kodex"], send_words: ["schreib"], draft_words: ["entwurf"], stop_words: ["stopp", "ende"], decoys: ["code", "text"] }, uk: { enabled: true, wake_words: ["кодекс"], send_words: ["пиши"], draft_words: ["чернетка"], stop_words: ["стоп"], decoys: ["код"] } }, hotkeys: { voice: "Alt+Z", dictation: "Alt+X" } }),
     save_settings: async (s) => { settings = s; return { ok: true, settings }; },
     reset_settings: async () => { settings = clone(defaults); return { ok: true, settings }; },
-    set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true,
+    set_paused: async () => ({}), set_autostart: async (v) => v, test_chat: async () => true, test_hotkey: async () => ({ ok: true }), install_app: async () => { ui.meta.installed = true; return { ok: true, installed: true, text: "Installed" }; }, uninstall_app: async () => { ui.meta.installed = false; return { ok: true, installed: false, text: "Uninstalled" }; },
     choose_folder: async () => "E:\\Assistants\\Hark",
     create_assistant: async (f) => { const folder = f || asstFolder; asstFolder = folder; settings = { ...settings, chat_target: "project", chat_project: folder, assistant_folder: folder, chat_continue_minutes: settings.chat_continue_minutes || 30 }; asstReady = true; return { ok: true, folder: settings.assistant_folder, project: true, settings }; },
     assistant_info: async () => ({ folder: asstFolder, ready: asstReady, project: asstReady, models: [{ slug: "gpt-6-astra", name: "GPT-6-Astra" }, { slug: "gpt-6.1-sol", name: "GPT-6.1-Sol" }], files: asstReady ? { ...asstFiles } : {} }),
     save_assistant_file: async (f, t) => { asstFiles[f] = t; return { ok: true }; }, open_assistant_folder: async () => true,
-    check_updates: async () => ({ status: "new", text: "A new version is available: 0.17.0 — you have 0.16.0", version: "0.17.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.17.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
+    check_updates: async () => ({ status: "new", text: "A new version is available: 0.18.0 — you have 0.17.0", version: "0.18.0", url: "https://github.com/ID-Yo/codex-hark/releases/tag/v0.18.0", can_install: true }), install_update: async () => ({ ok: false, text: "The update failed — test" }), last_update: async () => null,
     codex_targets: async () => ({ threads: [{ id: "01a11c4d-6c99-74f0-a01c-247f18944f21", title: "Codex voice", folder: "General" }, { id: "01a1206f-4a38-7471-9dd5-a4db91777023", title: "Add public project sponsorship", folder: "codex-hark-dev" }], projects: [{ name: "General", path: "D:\\Coding\\General" }, { name: "codex-hark-dev", path: "D:\\Coding\\codex-hark-dev" }] }),
     measure: async (s) => { await new Promise((r) => setTimeout(r, s * 1000)); return { ok: true, levels: [40, 60, 800, 900] }; },
     models: async () => [{ code: "en", model: "vosk-model-small-en-us-0.15", size_mb: 41, installed: !location.hash.includes("dl"), state: location.hash.includes("dl") ? "downloading" : "ready", progress: 0.42 }, { code: "bg", model: "vosk-model-small-ru-0.22", size_mb: 45, installed: true, state: "ready", progress: 0 }, { code: "de", model: "vosk-model-small-de-0.15", size_mb: 45, installed: false, state: "missing", progress: 0 }, { code: "uk", model: "vosk-model-small-uk-v3-nano", size_mb: 74, installed: false, state: "missing", progress: 0 }],
@@ -223,8 +237,8 @@ function setP(obj, path, value) { const keys = path.split("."); const last = key
 // Wake words may be phrases ("hey codex"); every other list holds single words.
 const MAX_PHRASE = 3;
 const normWord = (s) => s.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
-const langOfKey = (key) => key.split(".")[1];
-const isWake = (key) => key.endsWith(".wake_words");
+const langOfKey = (key) => key.startsWith("shortcuts.") ? key.split(".")[3] : key.split(".")[1];
+const isWake = (key) => key.endsWith(".wake_words") || key.includes(".words.");
 let checkTimer = 0, checkSeq = 0;
 function checkLine() {
   const c = ui.check;
@@ -265,7 +279,8 @@ async function refreshUnknown(lang = ui.wordsLang) {
   if (ui.screen === "commands" && !ui.adding) render();
 }
 function chips(key, label) {
-  const words = getP(ui.draft, key);
+  let words = getP(ui.draft, key);
+  if (!Array.isArray(words)) { words = []; setP(ui.draft, key, words); }
   const missing = ui.unknown[langOfKey(key)] || [];
   const lost = [...new Set(words.flatMap((w) => w.split(" ")).filter((t) => missing.includes(t)))];
   const add = ui.adding === key
@@ -327,6 +342,30 @@ function languagesCard() {
       (addable.length ? '<div class="set"><div><strong>' + L.addLang + "</strong><small>" + L.addLangHelp + '</small></div><div class="steps"><select id="add-lang" aria-label="' + L.addLang + '" style="width:auto">' + addable.map((m) => '<option value="' + m.code + '">' + L.langNames[m.code] + " · " + m.size_mb + " MB</option>").join("") + '</select><button class="btn btn-small" data-action="add-lang">' + L.addLang + "</button></div></div>" : "") + "</section>";
 }
 // ---------- screens ----------
+function shortcutsSection() {
+  const lang = ui.wordsLang;
+  const list = ui.draft.shortcuts || [];
+  return '<section class="card">' +
+    '<div class="head"><div class="head-title"><span class="mark send">' + icon("play") + "</span>" +
+    "<div><h2>" + L.shortcutsTitle + "</h2><small>" + L.shortcutsSub + "</small></div></div>" +
+    '<button class="btn btn-small btn-primary" data-action="add-shortcut">' + icon("spark") + L.addShortcut + "</button></div>" +
+    (list.length ? list.map((sc, i) => {
+      const wKey = "shortcuts." + i + ".words." + lang;
+      return '<div class="shortcut-item' + (sc.enabled ? "" : " disabled") + '">' +
+        '<div class="shortcut-header">' +
+        '<input class="text-input" style="flex:2;min-width:140px" data-text="shortcuts.' + i + '.name" placeholder="' + L.scNamePlaceholder + '" value="' + esc(sc.name) + '">' +
+        '<input class="text-input" style="flex:2;min-width:140px" data-text="shortcuts.' + i + '.hotkey" placeholder="' + L.scHotkeyPlaceholder + '" value="' + esc(sc.hotkey) + '">' +
+        '<label class="switch" title="' + L.scToggle + '"><input type="checkbox" data-key="shortcuts.' + i + '.enabled"' + (sc.enabled ? " checked" : "") + '><span></span></label>' +
+        '<button class="btn btn-small" data-action="test-sc-hotkey" data-hotkey="' + esc(sc.hotkey) + '" title="' + L.scTry + '">' + icon("play") + "</button>" +
+        '<button class="btn btn-small btn-danger" data-action="delete-shortcut" data-i="' + i + '" title="' + L.scDelete + '">' + icon("warn") + "</button>" +
+        "</div>" +
+        (ui.errors["shortcuts." + i + ".hotkey"] ? '<span class="error-text">' + esc(ui.errors["shortcuts." + i + ".hotkey"]) + "</span>" : "") +
+        chips(wKey, L.scKeywords) +
+        "</div>";
+    }).join("") : '<div class="alert">' + icon("info") + L.noShortcuts + "</div>") +
+    "</section>";
+}
+
 const screens = {
   home() {
     const live = ui.live || { state: "starting", level: 0 };
@@ -366,7 +405,7 @@ const screens = {
       chips(w + "send_words", L.sendWords) + chips(w + "draft_words", L.draftWords) + range("dictation_idle_seconds", L.dictEnd, 1, " s") + "</section></div>" +
       '<section class="card"><div><h2>' + L.sensitivity + "</h2><small>" + L.sensHelp + "</small></div>" +
       range("min_conf", L.minConf, 0.05, "") + range("cooldown_seconds", L.cooldown, 1, " s") +
-      "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>";
+      "<details" + (ui.errors[w + "decoys"] || ui.adding === w + "decoys" ? " open" : "") + "><summary>" + T("decoys", { n: getP(ui.draft, w + "decoys").length }) + "</summary><small>" + L.decoysHelp + "</small>" + chips(w + "decoys", "") + "</details></section>" + shortcutsSection();
   },
   micCards() {
     const live = ui.live || { level: 0 };
@@ -408,6 +447,9 @@ const screens = {
       '<div class="grid2">' + languagesCard() +
       '<section class="card" style="gap:0"><div><h2>' + L.windowsTitle + "</h2><small>" + L.windowsHelp + "</small></div>" +
       '<div class="set"><div><strong>' + L.autostart + "</strong><small>" + L.autostartHelp + '</small></div><label class="switch"><input type="checkbox" id="autostart" aria-label="' + L.autostart + '"' + (m.autostart ? " checked" : "") + "><span></span></label></div>" +
+'<div class="set"><div><strong>' + L.appInstall + "</strong><small>" + (m.installed ? L.appInstalled : L.appNotInstalled) + '</small></div>' +
+'<div class="steps">' + (m.installed ? '<button class="btn btn-small" data-action="install-app">' + icon("folder") + L.installNow + '</button><button class="btn btn-small btn-danger" data-action="uninstall-app">' + L.uninstallApp + '</button>' : '<button class="btn btn-small btn-primary" data-action="install-app">' + icon("folder") + L.installNow + '</button>') + '</div></div>' +
+
       '<div class="steps" style="padding-top:10px">' + '<button class="btn btn-small" data-action="folder">' + icon("folder") + L.dataFolder + '</button><button class="btn btn-small btn-danger" data-action="reset">' + L.reset + "</button></div>" +
       (ui.notice ? '<div class="alert ' + ui.notice[0] + '">' + esc(ui.notice[1]) + "</div>" : "") + "</section></div>" + screens.micCards();
   },
@@ -569,6 +611,39 @@ document.addEventListener("click", async (ev) => {
     case "discard": ui.draft = clone(ui.saved); ui.errors = {}; ui.calib = null; ui.notice = null; render(); break;
     case "test-chat": await api.test_chat(); break;
     case "download": ui.models = await api.download_model(d.lang); render(); break;
+    case "add-shortcut": {
+      const id = "sc_" + Date.now();
+      const newSc = {
+        id,
+        name: "Custom Shortcut",
+        hotkey: "Ctrl+Shift+Space",
+        enabled: true,
+        words: { [ui.wordsLang]: [] }
+      };
+      ui.draft.shortcuts = [...(ui.draft.shortcuts || []), newSc];
+      render(); updateSaveBar(); break;
+    }
+    case "delete-shortcut": {
+      const idx = Number(d.i);
+      ui.draft.shortcuts = (ui.draft.shortcuts || []).filter((_, i) => i !== idx);
+      render(); updateSaveBar(); break;
+    }
+    case "test-sc-hotkey": {
+      if (d.hotkey && api.test_hotkey) await api.test_hotkey(d.hotkey);
+      break;
+    }
+    case "install-app": {
+      const r = await api.install_app();
+      ui.meta.installed = r.installed;
+      ui.notice = [r.ok ? "ok" : "err", r.text];
+      render(); break;
+    }
+    case "uninstall-app": {
+      const r = await api.uninstall_app();
+      ui.meta.installed = r.installed;
+      ui.notice = [r.ok ? "ok" : "err", r.text];
+      render(); break;
+    }
     case "add-lang": {
       const code = $("#add-lang").value;
       ui.draft.languages[code] = clone(ui.meta.added_languages[code]); ui.wordsLang = code; ui.notice = null; render(); updateSaveBar(); break;
@@ -630,7 +705,7 @@ document.addEventListener("click", async (ev) => {
 document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.id === "query") { ui.query = t.value; render(); return; }
-  if (t.dataset?.text) { ui.draft[t.dataset.text] = t.value.slice(0, 40); ui.notice = null; updateSaveBar(); return; }
+  if (t.dataset?.text) { setP(ui.draft, t.dataset.text, t.value.slice(0, 60)); delete ui.errors[t.dataset.text]; ui.notice = null; updateSaveBar(); return; }
   if (t.id === "asst-text") { ui.asstEdits[ui.asstFile] = t.value; ui.asstNote = ""; const b = $("[data-action=save-file]"); if (b) b.disabled = ui.asstEdits[ui.asstFile] === ui.asstInfo.files[ui.asstFile]; return; }
   if (t.dataset?.add) { scheduleCheck(t.dataset.add, t.value); return; }
   if (t.type === "range") {

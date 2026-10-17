@@ -144,6 +144,80 @@ def set_autostart(enabled):
         logging.info("removed old startup shortcut %s", OLD_SHORTCUT)
 
 
+def get_install_paths():
+    appdata = os.environ.get("APPDATA", "")
+    userprofile = os.environ.get("USERPROFILE", "")
+    start_menu = os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs", "Codex Hark.lnk")
+    desktop = os.path.join(userprofile, "Desktop", "Codex Hark.lnk")
+    return start_menu, desktop
+
+
+def is_app_installed():
+    start_menu, _ = get_install_paths()
+    return os.path.exists(start_menu)
+
+
+def create_windows_shortcut(target, lnk_path, icon_location=None, work_dir=None, description="Codex Hark"):
+    icon = icon_location or f"{target},0"
+    work = work_dir or os.path.dirname(target)
+    os.makedirs(os.path.dirname(lnk_path), exist_ok=True)
+    payload = json.dumps({"target": target, "lnk": lnk_path, "work": work, "icon": icon, "desc": description})
+    ps = """
+    $d = [Console]::In.ReadToEnd() | ConvertFrom-Json
+    $ws = New-Object -ComObject WScript.Shell
+    $s = $ws.CreateShortcut($d.lnk)
+    $s.TargetPath = $d.target
+    $s.WorkingDirectory = $d.work
+    $s.IconLocation = $d.icon
+    $s.Description = $d.desc
+    $s.Save()
+    """
+    subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], input=payload, text=True, check=True)
+
+
+def install_app(exe_path=None):
+    """Create Start Menu and Desktop shortcuts and register in Windows Add/Remove Programs."""
+    exe = exe_path or (sys.executable if getattr(sys, "frozen", False) else os.path.abspath(sys.argv[0]))
+    icon = os.path.join(ww.DATA_DIR, "icon.ico")
+    save_icon(icon)
+    start_menu, desktop = get_install_paths()
+    create_windows_shortcut(exe, start_menu, icon, os.path.dirname(exe))
+    create_windows_shortcut(exe, desktop, icon, os.path.dirname(exe))
+    try:
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexHark"
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "Codex Hark")
+            winreg.SetValueEx(key, "DisplayVersion", 0, winreg.REG_SZ, ww.__version__)
+            winreg.SetValueEx(key, "Publisher", 0, winreg.REG_SZ, "Ivan Yosifov")
+            winreg.SetValueEx(key, "InstallLocation", 0, winreg.REG_SZ, os.path.dirname(exe))
+            winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, f'"{icon}"')
+            winreg.SetValueEx(key, "UninstallString", 0, winreg.REG_SZ, f'"{exe}" --uninstall')
+            winreg.SetValueEx(key, "URLInfoAbout", 0, winreg.REG_SZ, "https://ivanyosifov.com")
+            winreg.SetValueEx(key, "HelpLink", 0, winreg.REG_SZ, "https://github.com/ID-Yo/codex-hark")
+    except OSError:
+        pass
+    logging.info("app installed: %s, %s", start_menu, desktop)
+    return True
+
+
+def uninstall_app():
+    """Remove Start Menu and Desktop shortcuts and unregister from Windows."""
+    start_menu, desktop = get_install_paths()
+    for p in (start_menu, desktop):
+        try:
+            if os.path.exists(p):
+                os.remove(p)
+        except OSError:
+            pass
+    try:
+        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexHark")
+    except OSError:
+        pass
+    set_autostart(False)
+    logging.info("app uninstalled")
+    return True
+
+
 def refresh_autostart():
     """Follow the exe if it was moved while autostart is on (a source run leaves it alone)."""
     current = autostart_command()
@@ -211,7 +285,7 @@ class Api:
     def get_settings(self):
         app = self._app
         return {"settings": app.settings, "defaults": ww.DEFAULTS, "limits": ww.LIMITS,
-                "devices": ww.input_devices(), "autostart": autostart_command() is not None,
+                "devices": ww.input_devices(), "autostart": autostart_command() is not None, "installed": is_app_installed(),
                 "system_dark": system_dark(), "version": ww.__version__, "lang": app.lang(),
                 "hotkeys": ww.codex_hotkeys(),
                 "added_languages": {code: ww.language_defaults(code) for code in ww.ADDED_LANGUAGES}}
@@ -354,6 +428,27 @@ class Api:
     def open_url(self, url):
         """Open one of the About links in the default browser; any other address is refused."""
         return bool(ww.about_link(url)) and webbrowser.open(url)
+
+    def test_hotkey(self, hotkey):
+        """Test pressing a custom shortcut hotkey."""
+        ok = ww.press_hotkey(hotkey)
+        return {"ok": ok}
+
+    def install_app(self):
+        """Install Hark shortcuts in Start Menu and Desktop and register in Windows."""
+        try:
+            install_app()
+            return {"ok": True, "installed": True, "text": {"bg": "Hark е инсталиран в Start Menu и на работния плот с икона.", "en": "Hark installed to Start Menu and Desktop with icon."}[self._app.lang()]}
+        except Exception as e:
+            return {"ok": False, "installed": is_app_installed(), "text": str(e)}
+
+    def uninstall_app(self):
+        """Remove Hark shortcuts from Start Menu and Desktop."""
+        try:
+            uninstall_app()
+            return {"ok": True, "installed": False, "text": {"bg": "Преките пътища са премахнати.", "en": "Shortcuts removed."}[self._app.lang()]}
+        except Exception as e:
+            return {"ok": False, "installed": is_app_installed(), "text": str(e)}
 
 
 class App:
@@ -755,6 +850,8 @@ def migrate_legacy_autostart():
 def main(argv=None):
     parser = argparse.ArgumentParser(prog=ww.APP_NAME)
     parser.add_argument("--autostart", choices=["on", "off"], help="turn start with Windows on or off")
+    parser.add_argument("--install", action="store_true", help="install Start Menu and Desktop shortcuts and register in Windows")
+    parser.add_argument("--uninstall", action="store_true", help="remove shortcuts and Windows uninstall registration")
     parser.add_argument("--hidden", action="store_true", help="start in the tray without opening the window")
     parser.add_argument("--after-update", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--previous", default="", help=argparse.SUPPRESS)
@@ -762,6 +859,14 @@ def main(argv=None):
     ww.setup_logging()
     if args.autostart:
         set_autostart(args.autostart == "on")
+        return
+    if args.install:
+        install_app()
+        print("Codex Hark installed successfully.")
+        return
+    if args.uninstall:
+        uninstall_app()
+        print("Codex Hark uninstalled successfully.")
         return
     if args.after_update:  # the old version is closing; wait until it lets go of the single-instance lock
         for _ in range(60):

@@ -51,7 +51,7 @@ from comtypes.gen.UIAutomationClient import (  # noqa: E402
     CUIAutomation, IUIAutomation, IUIAutomationInvokePattern, TreeScope_Descendants,
     UIA_ButtonControlTypeId, UIA_ControlTypePropertyId, UIA_InvokePatternId, UIA_NamePropertyId)
 
-__version__ = "0.16.0"
+__version__ = "0.17.0"
 
 APP_NAME = "CodexHark"
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
@@ -162,6 +162,18 @@ DEFAULTS = {
     "update_check": True,  # look for a new release on GitHub after start and every UPDATE_INTERVAL_S
     "update_install": True,  # install a found release by itself (exe only), when no conversation is open
     "keys_checked": False,  # the first-run check of Codex's shortcuts has been done
+    "shortcuts": [
+        {
+            "id": "openwhispr",
+            "name": "OpenWhispr",
+            "hotkey": "Ctrl+Shift+Space",
+            "enabled": True,
+            "words": {
+                "en": ["whisper"],
+                "bg": ["виспер"],
+            },
+        }
+    ],
 }
 # Allowed range of each number setting.
 LIMITS = {"chat_continue_minutes": (0, 240), "min_conf": (0.2, 0.95), "idle_seconds": (3, 120), "dictation_idle_seconds": (1, 30),
@@ -188,6 +200,7 @@ MESSAGES = {
     "chat_opened": {"bg": ("Гласовият чат е отворен", ""), "en": ("Voice chat opened", "")},
     "chat_closing": {"bg": ("Затваряне на гласовия чат", "{seconds} s тишина"), "en": ("Closing voice chat", "{seconds} s of silence")},
     "chat_closed": {"bg": ("Гласовият чат е затворен", ""), "en": ("Voice chat closed", "")},
+    "shortcut_triggered": {"bg": ("Шорткът: {name} („{phrase}“)", "натисна {hotkey}"), "en": ("Shortcut: {name} (“{phrase}”)", "pressed {hotkey}")},
     "manual_dictation": {"bg": ("Диктовка, пусната ръчно", ""), "en": ("Dictation started by hand", "")},
     "manual_dictation_ended": {"bg": ("Ръчната диктовка приключи", ""), "en": ("Manual dictation ended", "")},
     "dictation_stopped": {"bg": ("Диктовката е спряна в Codex", ""), "en": ("Dictation was stopped in Codex", "")},
@@ -236,6 +249,7 @@ ERRORS = {
     "overlap": {"bg": "Една дума може да е само в един списък на езика.", "en": "A word can be in only one list per language."},
     "one_word": {"bg": "Тук се допуска само една дума: {words}.", "en": "Only single words are allowed here: {words}."},
     "too_long": {"bg": "Фразата може да е най-много от {n} думи: {words}.", "en": "A phrase can have at most {n} words: {words}."},
+    "hotkey_invalid": {"bg": "Невалиден клавиш (напр. „Ctrl+Shift+Space“, „Alt+Z“).", "en": "Invalid shortcut key (e.g. “Ctrl+Shift+Space”, “Alt+Z”)."},
     "no_language": {"bg": "Включете поне един език.", "en": "Turn on at least one language."},
 }
 
@@ -362,6 +376,41 @@ def _validate_languages(value, known_word, msg, errors):
     return langs
 
 
+def _validate_shortcuts(raw_list, known_word, msg, errors):
+    if not isinstance(raw_list, list):
+        errors["shortcuts"] = msg("type")
+        return []
+    cleaned = []
+    for idx, item in enumerate(raw_list):
+        if not isinstance(item, dict):
+            continue
+        sc_id = str(item.get("id") or f"sc_{idx}")
+        name = str(item.get("name") or "Shortcut").strip()[:60]
+        hotkey = str(item.get("hotkey") or "").strip()
+        enabled = bool(item.get("enabled", True))
+        if not parse_hotkey(hotkey):
+            errors[f"shortcuts.{idx}.hotkey"] = msg("hotkey_invalid")
+        raw_words = item.get("words", {})
+        cleaned_words = {}
+        if isinstance(raw_words, dict):
+            for l_code, wlist in raw_words.items():
+                if isinstance(wlist, list):
+                    w_clean = _clean_words(wlist)
+                    if known_word:
+                        for phrase in w_clean:
+                            for w in phrase.split():
+                                if not known_word(l_code, w):
+                                    errors[f"shortcuts.{idx}.words.{l_code}"] = msg("unknown", words=w)
+                    cleaned_words[l_code] = w_clean
+        cleaned.append({
+            "id": sc_id,
+            "name": name,
+            "hotkey": hotkey,
+            "enabled": enabled,
+            "words": cleaned_words,
+        })
+    return cleaned
+
 def validate_settings(raw, known_word=None, lang="bg"):
     """Return (settings, errors). Unknown keys are dropped; errors maps a key (or languages.<code>.<list>) to a message."""
     settings, errors = json.loads(json.dumps(DEFAULTS)), {}
@@ -372,6 +421,9 @@ def validate_settings(raw, known_word=None, lang="bg"):
         default = DEFAULTS[key]
         if key == "languages":
             settings[key] = _validate_languages(value, known_word, msg, errors)
+            continue
+        if key == "shortcuts":
+            settings[key] = _validate_shortcuts(value, known_word, msg, errors)
             continue
         if key in LIMITS:
             lo, hi = LIMITS[key]
@@ -678,6 +730,11 @@ def release_single_instance():
 CODEX_KEYS = {"realtimeVoice": "Alt+Z", "globalDictationHold": "Alt+X"}
 MODIFIER_CODES = {"alt": 0x12, "option": 0x12, "ctrl": 0x11, "control": 0x11, "commandorcontrol": 0x11,
                   "cmdorctrl": 0x11, "shift": 0x10, "win": 0x5B, "meta": 0x5B, "super": 0x5B}
+SPECIAL_KEY_CODES = {
+    "space": 0x20, "enter": 0x0D, "return": 0x0D, "tab": 0x09, "escape": 0x1B, "esc": 0x1B,
+    "backspace": 0x08, "delete": 0x2E, "del": 0x2E, "insert": 0x2D, "home": 0x24, "end": 0x23,
+    "pageup": 0x21, "pagedown": 0x22, "up": 0x26, "down": 0x28, "left": 0x25, "right": 0x27,
+}
 
 
 def keybindings_path():
@@ -743,34 +800,44 @@ def codex_hotkeys():
 
 
 def parse_hotkey(spec):
-    """Virtual-key codes of a key such as "Alt+Z", "Ctrl+Shift+V" or "F9" (modifiers first); None if unknown."""
+    """Virtual-key codes of a key such as "Alt+Z", "Ctrl+Shift+Space" or "F9" (modifiers first); None if unknown."""
     codes = []
     parts = [p.strip() for p in str(spec).split("+")]
     for part in parts[:-1]:
         if part.lower() not in MODIFIER_CODES:
             return None
         codes.append(MODIFIER_CODES[part.lower()])
-    key = parts[-1]
+    key = parts[-1].lower()
     if len(key) == 1 and key.isascii() and key.isalnum():
         codes.append(ord(key.upper()))
-    elif re.fullmatch(r"[Ff](\d{1,2})", key) and 1 <= int(key[1:]) <= 24:
+    elif key in SPECIAL_KEY_CODES:
+        codes.append(SPECIAL_KEY_CODES[key])
+    elif re.fullmatch(r"f(\d{1,2})", key) and 1 <= int(key[1:]) <= 24:
         codes.append(0x70 + int(key[1:]) - 1)
     else:
         return None
     return codes
 
 
-def press_voice_chat():
-    """Press Codex's voice chat key (Alt+Z unless Codex has another one)."""
-    codes = parse_hotkey(codex_hotkeys()["voice"])
+def press_hotkey(spec):
+    """Press a key combination (e.g. "Ctrl+Shift+Space", "Alt+Z"). Returns True if successful."""
+    codes = parse_hotkey(spec)
     if codes is None:
-        logging.warning("cannot press the voice chat key of Codex; using Alt+Z")
-        codes = parse_hotkey(CODEX_KEYS["realtimeVoice"])
+        logging.warning("cannot parse hotkey: %s", spec)
+        return False
     for code in codes:
         user32.keybd_event(code, 0, 0, 0)
     for code in reversed(codes):
         user32.keybd_event(code, 0, KEYUP, 0)
+    return True
 
+
+def press_voice_chat():
+    """Press Codex's voice chat key (Alt+Z unless Codex has another one)."""
+    hotkey = codex_hotkeys()["voice"]
+    if not press_hotkey(hotkey):
+        logging.warning("cannot press the voice chat key of Codex; using Alt+Z")
+        press_hotkey(CODEX_KEYS["realtimeVoice"])
 
 def beep():
     threading.Thread(target=lambda: ctypes.windll.kernel32.Beep(880, 120), daemon=True).start()
@@ -1125,10 +1192,16 @@ def codex_busy(db=None):
         return None
 
 
-def grammar(words):
-    """Vosk grammar of one language: every command word or phrase plus [unk] for everything else."""
-    words = [w for key in WORD_LISTS for w in words[key]] + ["[unk]"]
-    return json.dumps(list(dict.fromkeys(words)), ensure_ascii=False)
+def grammar(words, shortcuts=None, lang="en"):
+    """Vosk grammar of one language: every command word or phrase plus custom shortcuts plus [unk] for everything else."""
+    sc_words = []
+    if shortcuts:
+        for sc in shortcuts:
+            if sc.get("enabled", True):
+                for phrase in sc.get("words", {}).get(lang, []):
+                    sc_words.extend(phrase.split())
+    all_words = [w for key in WORD_LISTS for w in words[key]] + sc_words + ["[unk]"]
+    return json.dumps(list(dict.fromkeys(all_words)), ensure_ascii=False)
 
 
 def model_knows(model, word):
@@ -1136,10 +1209,36 @@ def model_knows(model, word):
     return vosk._c.vosk_model_find_word(model._handle, word.encode("utf-8")) >= 0
 
 
-def unknown_words(model, words):
-    """The words of one language's lists (phrases split into words) that the model does not know."""
-    return list(dict.fromkeys(t for key in WORD_LISTS for w in words[key] for t in w.split()
-                              if not model_knows(model, t)))
+def unknown_words(model, words, shortcuts=None, lang="en"):
+    """The words of one language's lists and shortcuts that the model does not know."""
+    sc_words = []
+    if shortcuts:
+        for sc in shortcuts:
+            if sc.get("enabled", True):
+                for phrase in sc.get("words", {}).get(lang, []):
+                    sc_words.extend(phrase.split())
+    all_words = [t for key in WORD_LISTS for w in words[key] for t in w.split()] + sc_words
+    return list(dict.fromkeys(t for t in all_words if not model_knows(model, t)))
+
+
+def heard_shortcut(result_json, shortcuts, lang, min_conf):
+    """Return (shortcut, matched_phrase, confidence) if a custom shortcut was heard."""
+    found = json.loads(result_json).get("result", [])
+    if not found or not shortcuts:
+        return None, "", 0.0
+    for sc in shortcuts:
+        if not sc.get("enabled", True):
+            continue
+        phrases = sorted((p.split() for p in sc.get("words", {}).get(lang, []) if p), key=len, reverse=True)
+        for i in range(len(found)):
+            for phrase in phrases:
+                part = found[i:i + len(phrase)]
+                if [w["word"] for w in part] != phrase:
+                    continue
+                conf = sum(w["conf"] for w in part) / len(part)
+                if conf >= min_conf:
+                    return sc, " ".join(phrase), conf
+    return None, "", 0.0
 
 
 class Listener:
@@ -1209,11 +1308,11 @@ class Listener:
                 path = model_dir(lang) if words["enabled"] else None
                 if path:
                     self.models[lang] = Model(path)
-                    if unknown := unknown_words(self.models[lang], words):
+                    if unknown := unknown_words(self.models[lang], words, s.get("shortcuts"), lang):
                         logging.warning("%s: the model does not know %s; these words are ignored", lang, ", ".join(unknown))
                         self.events.add("error", "words_unknown", language=lang, words=", ".join(unknown))
                         self.on_problem("words", language=lang, words=", ".join(unknown))
-                    rec = KaldiRecognizer(self.models[lang], RATE, grammar(words))
+                    rec = KaldiRecognizer(self.models[lang], RATE, grammar(words, s.get("shortcuts"), lang))
                     rec.SetWords(True)
                     recs.append((lang, rec))
             if not recs:  # every enabled language is still downloading; the app restarts us when ready
@@ -1272,15 +1371,22 @@ class Listener:
                 r.Reset()
 
         def recognize(data):
-            """Every wake phrase heard in this block, one per language: [(words, wake, following, conf)]."""
+            """Every wake phrase and shortcut heard in this block: (hits, shortcut_hits)."""
             hits = []
+            sc_hits = []
+            shortcuts = s.get("shortcuts", [])
             for lang, r in recs:
                 if r.AcceptWaveform(data):
+                    res_json = r.Result()
                     words = s["languages"][lang]
-                    wake, following, conf = heard(r.Result(), words, s["min_conf"])
+                    wake, following, conf = heard(res_json, words, s["min_conf"])
                     if wake:
                         hits.append((words, wake, following, conf))
-            return hits
+                    if shortcuts:
+                        sc, phr, sc_conf = heard_shortcut(res_json, shortcuts, lang, s["min_conf"])
+                        if sc:
+                            sc_hits.append((sc, phr, sc_conf))
+            return hits, sc_hits
 
         def is_command(hit):
             words, _, following, _ = hit
@@ -1340,7 +1446,7 @@ class Listener:
                         reset()
                         continue
                     # During a conversation only the stop phrase is acted on.
-                    hits = recognize(bytes(data)) if s["stop_enabled"] else []
+                    hits, _ = recognize(bytes(data)) if s["stop_enabled"] else ([], [])
                     hit = next((h for h in hits if h[2] in h[0]["stop_words"]), None)
                     if hit:
                         _, wake, following, conf = hit
@@ -1364,7 +1470,16 @@ class Listener:
                     reset()
                     last = now  # short pause before the wake word works again
                     self._set("listening")
-                hits = recognize(bytes(data))
+                hits, sc_hits = recognize(bytes(data))
+                if sc_hits and now - last > s["cooldown_seconds"]:
+                    sc, phr, sc_conf = sc_hits[0]
+                    last = now
+                    if s["beep"]:
+                        beep()
+                    ev.add("shortcut", "shortcut_triggered", name=sc["name"], phrase=phr, hotkey=sc["hotkey"], conf=f"{sc_conf:.2f}")
+                    press_hotkey(sc["hotkey"])
+                    reset()
+                    continue
                 command = next(filter(is_command, hits), None)
                 if command:
                     hit, pending = command, None
